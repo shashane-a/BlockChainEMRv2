@@ -18,8 +18,9 @@ class WalletLoginView(APIView):
     def post(self, request):
         address = request.data.get("address")
         signature = request.data.get("signature")
-        nonce = cache.get(address)
+        role = request.data.get("role")  # This may be None
 
+        nonce = cache.get(address)
         if not nonce:
             return Response({"error": "Nonce expired."}, status=400)
 
@@ -33,23 +34,30 @@ class WalletLoginView(APIView):
             return Response({"error": "Signature mismatch."}, status=400)
 
         user, created = User.objects.get_or_create(wallet_address=address)
+        # If role provided (from chain), use it
+        if role in ['patient', 'provider', 'admin']:
+            user.role = role
+            user.save()
+
         refresh = RefreshToken.for_user(user)
         return Response({
             "refresh": str(refresh),
             "access": str(refresh.access_token),
             "role": user.role,
+            "created": created,
         })
-         
+                
         
-class RegisterRoleView(APIView):
+class SetUserRoleView(APIView):
     def post(self, request):
         address = request.data.get("address")
         role = request.data.get("role")
-        if role not in ["patient", "provider"]:
+        if role not in ['patient', 'provider']:
             return Response({"error": "Invalid role"}, status=400)
-        user, created = User.objects.get_or_create(wallet_address=address)
-        if user.role != "patient" and not created:
-            return Response({"error": "Role already set or upgrade denied"}, status=403)
-        user.role = role
-        user.save()
-        return Response({"success": True, "role": user.role})
+        try:
+            user = User.objects.get(wallet_address=address)
+            user.role = role
+            user.save()
+            return Response({"success": True, "role": role})
+        except User.DoesNotExist:
+            return Response({"error": "User not found"}, status=404)

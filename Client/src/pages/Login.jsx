@@ -1,42 +1,208 @@
 import { useState } from 'react';
 import { ethers } from 'ethers';
 import axios from 'axios';
+import { contractAddress, contractABI } from '../contracts/UserRegistryContract.js';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css'; // Add this import for toast styling
 
 export default function Login() {
   const [address, setAddress] = useState('');
   const [loading, setLoading] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [showRolePicker, setShowRolePicker] = useState(false);
+  const [selectedRole, setSelectedRole] = useState('');
+  const [userRole, setUserRole] = useState('');
+
+  // const loginWithWallet = async () => {
+  //   setLoading(true);
+  //   try {
+  //     if (!window.ethereum) return toast.error('Please install MetaMask!');
+  //     const provider = new ethers.BrowserProvider(window.ethereum);
+  //     const signer = await provider.getSigner();
+  //     const userAddress = await signer.getAddress();
+  //     setAddress(userAddress);
   
+  //     // 1. Check on-chain role
+  //     const onChainRole = await getRoleOnChain(userAddress);
+  //     console.log('On-chain role:', onChainRole);
+  
+  //     const { data: nonceData } = await axios.post('http://localhost:8000/api/auth/nonce/', {
+  //       address: userAddress,
+  //     });
+  
+  //     const signature = await signer.signMessage(nonceData.nonce);
+  
+  //     // 2. If on-chain role found, send to backend and login
+  //     if (onChainRole) {
+  //       // Optional: update backend user role to match blockchain
+  //       const { data: loginData } = await axios.post('http://localhost:8000/api/auth/login/', {
+  //         address: userAddress,
+  //         signature,
+  //         role: onChainRole, 
+  //       });
+  
+  //       localStorage.setItem('accessToken', loginData.access);
+  //       setIsLoggedIn(true);
+  //       setUserRole(onChainRole);
+  //       toast.success(`Logged in with role ${onChainRole}`);
+  //       setShowRolePicker(false);
+  //     } else {
+  //       // No on-chain role: proceed as before (let user pick)
+  //       const { data: loginData } = await axios.post('http://localhost:8000/api/auth/login/', {
+  //         address: userAddress,
+  //         signature,
+  //       });
+  
+  //       localStorage.setItem('accessToken', loginData.access);
+  //       if (loginData.created) {
+  //         setShowRolePicker(true);
+  //       } else {
+  //         setIsLoggedIn(true);
+  //         setUserRole(loginData.role);
+  //         toast.success(`Logged in with role ${loginData.role}`);
+  //       }
+  //     }
+  
+  //   } catch (err) {
+  //     console.error(err);
+  //     toast.error('Login failed');
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
+
   const loginWithWallet = async () => {
     setLoading(true);
     try {
-      if (!window.ethereum) return alert('Please install MetaMask!');
+      if (!window.ethereum) return toast.error('Please install MetaMask!');
       const provider = new ethers.BrowserProvider(window.ethereum);
       const signer = await provider.getSigner();
       const userAddress = await signer.getAddress();
       setAddress(userAddress);
-
+  
+      // 1. Always check blockchain for role
+      const onChainRole = await getRoleOnChain(userAddress);
+  
       const { data: nonceData } = await axios.post('http://localhost:8000/api/auth/nonce/', {
         address: userAddress,
       });
-
+  
       const signature = await signer.signMessage(nonceData.nonce);
-
+  
       const { data: loginData } = await axios.post('http://localhost:8000/api/auth/login/', {
         address: userAddress,
         signature,
-      });
 
+      });
+  
       localStorage.setItem('accessToken', loginData.access);
-      setIsLoggedIn(true);
-      alert(`Logged in as ${userAddress} with role ${loginData.role}`);
+  
+      // If no on-chain role, always show role picker
+      if (!onChainRole) {
+        setShowRolePicker(true);
+        setUserRole(""); 
+
+      } else {
+        setIsLoggedIn(true);
+        setUserRole(onChainRole);
+        setShowRolePicker(false);
+        toast.success(`Logged in with role ${onChainRole}`);
+        // (Optional) Sync backend role if different
+        if (loginData.role !== onChainRole) {
+          // Call set_role to sync Django
+          const token = localStorage.getItem('accessToken');
+          await axios.post('http://localhost:8000/api/auth/set_role/', {
+            address: userAddress,
+            role: onChainRole,
+          }, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+        }
+      }
+  
     } catch (err) {
       console.error(err);
-      alert('Login failed');
+      toast.error('Login failed');
     } finally {
       setLoading(false);
     }
   };
+  
+
+  async function getRoleOnChain(address) {
+    if (!window.ethereum) return null;
+    const provider = new ethers.BrowserProvider(window.ethereum);
+    const contract = new ethers.Contract(contractAddress, contractABI, provider);
+    try {
+      // Returns a number: 0=None, 1=Patient, 2=Provider, 3=Admin
+      const roleId = await contract.getRole(address);
+      console.log('Role ID:', roleId.toString());
+      switch (roleId.toString()) {
+        case '1': return 'patient';
+        case '2': return 'provider';
+        case '3': return 'admin';
+        default: return null;
+      }
+    } catch (err) {
+      console.error('Could not get role on chain', err);
+      return null;
+    }
+  }
+  
+
+  const handleRoleSubmit = async () => {
+    setLoading(true);
+    if (!selectedRole) return toast.warning('Please select a role!');
+    const success = await registerRoleOnChain(selectedRole);
+    if (!success) return;
+
+    try {
+      const token = localStorage.getItem('accessToken');
+      await axios.post('http://localhost:8000/api/auth/set_role/', {
+        address,
+        role: selectedRole,
+      });
+      setIsLoggedIn(true);
+      setUserRole(selectedRole);
+      setShowRolePicker(false);
+      toast.success(`Role set to ${selectedRole}`);
+      setLoading(false);
+    } catch (err) {
+      toast.error('Role selection failed');
+    }
+  };
+
+
+
+// inside your React component:
+async function registerRoleOnChain(selectedRole) {
+  if (!window.ethereum) return alert('MetaMask not found!');
+  const provider = new ethers.BrowserProvider(window.ethereum);
+  const signer = await provider.getSigner();
+  const contract = new ethers.Contract(contractAddress, contractABI, signer);
+
+  try {
+    let tx;
+    if (selectedRole === 'patient') {
+      tx = await contract.registerAsPatient();
+    } else if (selectedRole === 'provider') {
+      tx = await contract.registerAsProvider();
+    } else {
+      throw new Error("Invalid role");
+    }
+    await tx.wait(); // Wait for tx confirmation
+    // alert('Role registered on blockchain!');
+    toast.success('Role registered on blockchain!');
+    return true;
+  } catch (err) {
+    console.error('Smart contract error:', err);
+    // alert('Blockchain registration failed');
+    toast.error('Blockchain registration failed');
+    return false;
+  }
+}
+
+
 //https://colorhunt.co/palette/f9f7f7dbe2ef3f72af112d4e
   return (
     <div 
@@ -48,6 +214,9 @@ export default function Login() {
         backgroundRepeat: 'no-repeat',
       }}
       >
+      {/* Add ToastContainer here */}
+      <ToastContainer position="bottom-right" autoClose={5000} theme='colored' />
+      
       <div className='flex flex-col items-center justify-center w-full  p-6'>
         <div className='flex flex-col items-center justify-center w-full  p-6'>
           <h1 className="text-6xl font-bold text-[#112D4E]">Medix</h1>
@@ -56,13 +225,13 @@ export default function Login() {
         <div className="w-1/5 p-5 mt-5 bg-white/40 rounded-lg shadow-md">
           <div className="text-center">
             
-            <p className="mt-2 text-gray-600">Sign in with your wallet to continue</p>
+            { !isLoggedIn ? <p className="mt-2 text-gray-600">Sign in with your wallet to continue</p> : null }
           </div>
           
-          <div className="mt-8">
+          <div className={`${isLoggedIn ? 'mt-2' : 'mt-8'}`}>
             <button 
               onClick={loginWithWallet} 
-              disabled={loading || isLoggedIn}
+              disabled={loading || isLoggedIn || showRolePicker}
               className={`w-full flex justify-center items-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white ${isLoggedIn ? 'bg-[#3faf71]' : 'bg-[#3F72AF] hover:bg-[#3f71afb7]'} focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-75 disabled:cursor-not-allowed`}
             >
               {loading ? (
@@ -78,7 +247,7 @@ export default function Login() {
                   <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
                     <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"></path>
                   </svg>
-                  Logged In
+                  Logged In as {userRole.charAt(0).toUpperCase() + userRole.slice(1)}
                 </>
               ) : (
                 <>
@@ -96,6 +265,47 @@ export default function Login() {
                 <span className="font-mono ml-2 text-xs break-all">{address}</span>
               </p>
             </div>
+          )}
+
+          {showRolePicker && (
+
+              <div className="rounded-xl  p-8 flex flex-col items-center">
+                <h2 className="mb-4 text-gray-600 font-bold">Select Your Role</h2>
+                <div className="flex gap-6 mb-6">
+                  <button
+                    onClick={() => setSelectedRole('patient')}
+                    className={`py-2 px-4 rounded ${selectedRole==='patient'?'bg-[#2277f7] text-white':'bg-gray-100'}`}>
+                    Patient
+                  </button>
+                  <button
+                    onClick={() => setSelectedRole('provider')}
+                    className={`py-2 px-4 rounded ${selectedRole==='provider'?'bg-[#3faf71] text-white':'bg-gray-100'}`}>
+                    Healthcare Provider
+                  </button>
+                </div>
+                <button
+                  onClick={handleRoleSubmit}
+                  className="py-2 px-6 rounded bg-[#3F72AF] text-white font-semibold"
+                  disabled={loading}
+                >{ loading ? (
+                  <div className="flex items-center w-full">
+                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <p className="text-sm">
+                      Setting Role...
+                    </p>
+                    
+                  </div>
+                ) : (
+                  <p className="text-sm">
+                      Continue
+                    </p>
+                )
+                }</button>
+              </div>
+
           )}
         </div>
       </div>
