@@ -5,6 +5,8 @@ from .models import User
 from rest_framework_simplejwt.tokens import RefreshToken
 from eth_account.messages import encode_defunct
 from eth_account import Account
+from rest_framework.permissions import IsAuthenticated
+from rest_framework_simplejwt.authentication import JWTAuthentication
 import random
 
 class GetNonceView(APIView):
@@ -49,10 +51,13 @@ class WalletLoginView(APIView):
                 
         
 class SetUserRoleView(APIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
     def post(self, request):
+        print("User:", request.data)
         address = request.data.get("address")
         role = request.data.get("role")
-        if role not in ['patient', 'provider']:
+        if role not in ['patient', 'provider', 'admin']:
             return Response({"error": "Invalid role"}, status=400)
         try:
             user = User.objects.get(wallet_address=address)
@@ -60,4 +65,4 @@ class SetUserRoleView(APIView):
             user.save()
             return Response({"success": True, "role": role})
         except User.DoesNotExist:
-            return Response({"error": "User not found"}, status=404)
+            return Response({"error": "User not founddd"}, status=404)

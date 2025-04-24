@@ -88,6 +88,7 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'emr_api.wsgi.application'
 
+AUTH_USER_MODEL = 'users.User'  # Custom user model
 
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases

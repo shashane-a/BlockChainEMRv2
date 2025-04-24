@@ -13,64 +13,6 @@ export default function Login() {
   const [selectedRole, setSelectedRole] = useState('');
   const [userRole, setUserRole] = useState('');
 
-  // const loginWithWallet = async () => {
-  //   setLoading(true);
-  //   try {
-  //     if (!window.ethereum) return toast.error('Please install MetaMask!');
-  //     const provider = new ethers.BrowserProvider(window.ethereum);
-  //     const signer = await provider.getSigner();
-  //     const userAddress = await signer.getAddress();
-  //     setAddress(userAddress);
-  
-  //     // 1. Check on-chain role
-  //     const onChainRole = await getRoleOnChain(userAddress);
-  //     console.log('On-chain role:', onChainRole);
-  
-  //     const { data: nonceData } = await axios.post('http://localhost:8000/api/auth/nonce/', {
-  //       address: userAddress,
-  //     });
-  
-  //     const signature = await signer.signMessage(nonceData.nonce);
-  
-  //     // 2. If on-chain role found, send to backend and login
-  //     if (onChainRole) {
-  //       // Optional: update backend user role to match blockchain
-  //       const { data: loginData } = await axios.post('http://localhost:8000/api/auth/login/', {
-  //         address: userAddress,
-  //         signature,
-  //         role: onChainRole, 
-  //       });
-  
-  //       localStorage.setItem('accessToken', loginData.access);
-  //       setIsLoggedIn(true);
-  //       setUserRole(onChainRole);
-  //       toast.success(`Logged in with role ${onChainRole}`);
-  //       setShowRolePicker(false);
-  //     } else {
-  //       // No on-chain role: proceed as before (let user pick)
-  //       const { data: loginData } = await axios.post('http://localhost:8000/api/auth/login/', {
-  //         address: userAddress,
-  //         signature,
-  //       });
-  
-  //       localStorage.setItem('accessToken', loginData.access);
-  //       if (loginData.created) {
-  //         setShowRolePicker(true);
-  //       } else {
-  //         setIsLoggedIn(true);
-  //         setUserRole(loginData.role);
-  //         toast.success(`Logged in with role ${loginData.role}`);
-  //       }
-  //     }
-  
-  //   } catch (err) {
-  //     console.error(err);
-  //     toast.error('Login failed');
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
-
   const loginWithWallet = async () => {
     setLoading(true);
     try {
@@ -111,6 +53,7 @@ export default function Login() {
         if (loginData.role !== onChainRole) {
           // Call set_role to sync Django
           const token = localStorage.getItem('accessToken');
+          console.log(token);
           await axios.post('http://localhost:8000/api/auth/set_role/', {
             address: userAddress,
             role: onChainRole,
@@ -161,6 +104,8 @@ export default function Login() {
       await axios.post('http://localhost:8000/api/auth/set_role/', {
         address,
         role: selectedRole,
+      },{
+        headers: { Authorization: `Bearer ${token}` }
       });
       setIsLoggedIn(true);
       setUserRole(selectedRole);
