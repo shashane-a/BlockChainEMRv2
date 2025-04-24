@@ -42,6 +42,8 @@ class WalletLoginView(APIView):
             user.save()
 
         refresh = RefreshToken.for_user(user)
+        refresh['wallet_address'] = user.wallet_address
+        refresh['role'] = user.role
         return Response({
             "refresh": str(refresh),
             "access": str(refresh.access_token),

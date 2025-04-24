@@ -3,7 +3,7 @@ import { ethers } from 'ethers';
 import axios from 'axios';
 import { contractAddress, contractABI } from '../contracts/UserRegistryContract.js';
 import { ToastContainer, toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css'; // Add this import for toast styling
+import 'react-toastify/dist/ReactToastify.css';
 
 export default function Login() {
   const [address, setAddress] = useState('');
@@ -38,8 +38,7 @@ export default function Login() {
       });
   
       localStorage.setItem('accessToken', loginData.access);
-  
-      // If no on-chain role, always show role picker
+
       if (!onChainRole) {
         setShowRolePicker(true);
         setUserRole(""); 
@@ -118,8 +117,6 @@ export default function Login() {
   };
 
 
-
-// inside your React component:
 async function registerRoleOnChain(selectedRole) {
   if (!window.ethereum) return alert('MetaMask not found!');
   const provider = new ethers.BrowserProvider(window.ethereum);
@@ -146,7 +143,6 @@ async function registerRoleOnChain(selectedRole) {
     return false;
   }
 }
-
 
 //https://colorhunt.co/palette/f9f7f7dbe2ef3f72af112d4e
   return (
@@ -219,12 +215,12 @@ async function registerRoleOnChain(selectedRole) {
                 <div className="flex gap-6 mb-6">
                   <button
                     onClick={() => setSelectedRole('patient')}
-                    className={`py-2 px-4 rounded ${selectedRole==='patient'?'bg-[#2277f7] text-white':'bg-gray-100'}`}>
+                    className={`py-2 px-4 rounded ${selectedRole==='patient'?'bg-[#4e86db] text-white':'bg-gray-100'}`}>
                     Patient
                   </button>
                   <button
                     onClick={() => setSelectedRole('provider')}
-                    className={`py-2 px-4 rounded ${selectedRole==='provider'?'bg-[#3faf71] text-white':'bg-gray-100'}`}>
+                    className={`py-2 px-4 rounded ${selectedRole==='provider'?'bg-[#41ad72] text-white':'bg-gray-100'}`}>
                     Healthcare Provider
                   </button>
                 </div>
