@@ -11,59 +11,70 @@ import Prescriptions from "./pages/Prescriptions";
 import Analytics from "./pages/Analytics";
 import Access from "./pages/Access";
 import AuthRedirect from "./components/AuthRedirect"; // import the redirector
+import { PatientDataProvider } from "./context/PatientDataContext";
 
 function Layout() {
   const location = useLocation();
   const hideSidebar = location.pathname === "/login";
 
   return (
-    <div className="flex min-h-screen">
-      {!hideSidebar && <Sidebar />}
-      <main className="flex-1">
-        <Routes>
-          {/* ... your routes ... */}
-          <Route path="/" element={<AuthRedirect />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/dashboard" element={
-            <ProtectedRoute allowedRoles={["admin", "provider", "patient"]}>
-              <Dashboard />
-            </ProtectedRoute>
-          } />
-          <Route path="/access" element={
-            <ProtectedRoute allowedRoles={["admin", "patient"]}>
-              <Access />
-            </ProtectedRoute>
-          } />
-          <Route path="/patients" element={
-            <ProtectedRoute allowedRoles={["admin", "provider"]}>
-              <Patients />
-            </ProtectedRoute>
-          } />
-          <Route path="/appointments" element={
-            <ProtectedRoute allowedRoles={["admin", "provider", "patient"]}>
-              <Appointments />
-            </ProtectedRoute>
-          } />
-          <Route path="/prescriptions" element={
-            <ProtectedRoute allowedRoles={["admin", "provider", "patient"]}>
-              <Prescriptions />
-            </ProtectedRoute>
-          } />
-          <Route path="/analytics" element={
-            <ProtectedRoute allowedRoles={["admin", "provider"]}>
-              <Analytics />
-            </ProtectedRoute>
-          } />
-          <Route path="/profile" element={
-            <ProtectedRoute allowedRoles={["admin", "provider", "patient"]}>
-              <Profile />
-            </ProtectedRoute>
-          } />
-          <Route path="/unauthorized" element={<Unauthorized />} />
-          <Route path="*" element={<AuthRedirect />} />
-        </Routes>
-      </main>
-    </div>
+    <PatientDataProvider>
+      <div 
+        className="flex min-h-screen"
+        style={{
+          backgroundImage: 'url("/src/assets/backdrop.png")',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          backgroundRepeat: 'no-repeat',
+        }}
+        >
+        {!hideSidebar && <Sidebar />}
+        <main className="flex-1">
+          <Routes>
+            {/* ... your routes ... */}
+            <Route path="/" element={<AuthRedirect />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/dashboard" element={
+              <ProtectedRoute allowedRoles={["admin", "provider", "patient"]}>
+                <Dashboard />
+              </ProtectedRoute>
+            } />
+            <Route path="/access" element={
+              <ProtectedRoute allowedRoles={["admin", "patient"]}>
+                <Access />
+              </ProtectedRoute>
+            } />
+            <Route path="/patients" element={
+              <ProtectedRoute allowedRoles={["admin", "provider"]}>
+                <Patients />
+              </ProtectedRoute>
+            } />
+            <Route path="/appointments" element={
+              <ProtectedRoute allowedRoles={["admin", "provider", "patient"]}>
+                <Appointments />
+              </ProtectedRoute>
+            } />
+            <Route path="/prescriptions" element={
+              <ProtectedRoute allowedRoles={["admin", "provider", "patient"]}>
+                <Prescriptions />
+              </ProtectedRoute>
+            } />
+            <Route path="/analytics" element={
+              <ProtectedRoute allowedRoles={["admin", "provider"]}>
+                <Analytics />
+              </ProtectedRoute>
+            } />
+            <Route path="/profile" element={
+              <ProtectedRoute allowedRoles={["admin", "provider", "patient"]}>
+                <Profile />
+              </ProtectedRoute>
+            } />
+            <Route path="/unauthorized" element={<Unauthorized />} />
+            <Route path="*" element={<AuthRedirect />} />
+          </Routes>
+        </main>
+      </div>
+    </PatientDataProvider>
   );
 }
 

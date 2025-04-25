@@ -21,7 +21,7 @@ export function AuthProvider({ children }) {
 
   // Persist state to localStorage on change
   useEffect(() => {
-    console.log("Auth state changed:" );
+    console.log("Auth state changed" );
     console.log(auth);
     console.log("Access Token: ", auth.accessToken);
     if (auth.accessToken) {

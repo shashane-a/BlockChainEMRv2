@@ -5,15 +5,15 @@ export default function Sidebar() {
   const { auth, logout } = useAuth();
 
   return (
-    <aside className="w-60 bg-white border-r p-6 flex flex-col gap-6">
-      <h2 className="text-xl font-bold mb-8 text-blue-800">Medix App</h2>
-      <nav className="flex flex-col gap-4">
+    <aside className="w-60 bg-[#3F72AF]/30 p-6 flex flex-col h-screen">
+      <h2 className="text-5xl font-bold text-center mb-8 text-[#112D4E]">Medix</h2>
+      <nav className="flex flex-col gap-4 flex-grow">
         {/* Show dashboard link for all roles */}
         {["admin", "provider", "patient"].includes(auth.role) && (
           <NavLink
             to="/dashboard"
             className={({ isActive }) =>
-              `block py-2 px-4 rounded ${isActive ? "bg-blue-200" : ""}`
+              `block py-2 px-4 rounded ${isActive ? "bg-[#3F72AF] text-white font-semibold text-sm" : "bg-[#DBE2EF]/40 font-semibold text-sm"}`
             }
           >
             Dashboard
@@ -23,7 +23,7 @@ export default function Sidebar() {
           <NavLink
             to="/access"
             className={({ isActive }) =>
-              `block py-2 px-4 rounded ${isActive ? "bg-blue-200" : ""}`
+              `block py-2 px-4 rounded ${isActive ? "bg-[#3F72AF] text-white font-semibold text-sm" : "bg-[#DBE2EF]/40 font-semibold text-sm"}` 
             }
           >
             Manage Access
@@ -33,7 +33,7 @@ export default function Sidebar() {
           <NavLink
             to="/patients"
             className={({ isActive }) =>
-              `block py-2 px-4 rounded ${isActive ? "bg-blue-200" : ""}`
+              `block py-2 px-4 rounded ${isActive ? "bg-[#3F72AF] text-white font-semibold text-sm" : "bg-[#DBE2EF]/40 font-semibold text-sm"}` 
             }
           >
             Patients
@@ -43,7 +43,7 @@ export default function Sidebar() {
           <NavLink
             to="/appointments"
             className={({ isActive }) =>
-              `block py-2 px-4 rounded ${isActive ? "bg-blue-200" : ""}`
+              `block py-2 px-4 rounded ${isActive ? "bg-[#3F72AF] text-white font-semibold text-sm" : "bg-[#DBE2EF]/40 font-semibold text-sm"}` 
             }
           >
             Appointments
@@ -53,7 +53,7 @@ export default function Sidebar() {
           <NavLink
             to="/prescriptions"
             className={({ isActive }) =>
-              `block py-2 px-4 rounded ${isActive ? "bg-blue-200" : ""}`
+              `block py-2 px-4 rounded ${isActive ? "bg-[#3F72AF] text-white font-semibold text-sm" : "bg-[#DBE2EF]/40 font-semibold text-sm"}` 
             }
           >
             Prescriptions
@@ -63,7 +63,7 @@ export default function Sidebar() {
           <NavLink
             to="/analytics"
             className={({ isActive }) =>
-              `block py-2 px-4 rounded ${isActive ? "bg-blue-200" : ""}`
+              `block py-2 px-4 rounded ${isActive ? "bg-[#3F72AF] text-white font-semibold text-sm" : "bg-[#DBE2EF]/40 font-semibold text-sm"}` 
             }
           >
             Analytics
@@ -73,32 +73,36 @@ export default function Sidebar() {
           <NavLink
             to="/profile"
             className={({ isActive }) =>
-              `block py-2 px-4 rounded ${isActive ? "bg-blue-200" : ""}`
+              `block py-2 px-4 rounded ${isActive ? "bg-[#3F72AF] text-white font-semibold text-sm" : "bg-[#DBE2EF]/40 font-semibold text-sm"}` 
             }
           >
             Profile
           </NavLink>
         )}
-        {/* Show login/logout based on auth state */}
+        {/* Login link should still be part of the main nav */}
         {!auth.accessToken && (
           <NavLink
             to="/login"
             className={({ isActive }) =>
-              `block py-2 px-4 rounded ${isActive ? "bg-blue-200" : ""}`
+              `block py-2 px-4 rounded ${isActive ? "bg-[#3F72AF] text-white font-semibold text-sm" : "bg-[#DBE2EF]/40 font-semibold text-sm"}`
             }
           >
             Login
           </NavLink>
         )}
-        {auth.accessToken && (
+      </nav>
+      
+      {/* Logout button at the bottom of sidebar */}
+      {auth.accessToken && (
+        <div className="mt-auto pt-4">
           <button
             onClick={logout}
-            className="block py-2 px-4 rounded bg-red-100 text-red-800 mt-6"
+            className="block w-full py-2 px-4 rounded bg-[#cc6f6f] text-white font-semibold text-sm"
           >
             Logout
           </button>
-        )}
-      </nav>
+        </div>
+      )}
     </aside>
   );
 }

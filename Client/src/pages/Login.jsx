@@ -7,6 +7,8 @@ import 'react-toastify/dist/ReactToastify.css';
 import { useAuth } from "../context/AuthContext.jsx"; // import the hook
 import { jwtDecode } from "jwt-decode";// import jwt-decode
 import { useNavigate } from "react-router-dom";
+import { usePatientData } from '../context/PatientDataContext.jsx';
+import { fetchPatientData } from "../utils/patients";
 
 export default function Login() {
   const [address, setAddress] = useState('');
@@ -15,7 +17,8 @@ export default function Login() {
   const [showRolePicker, setShowRolePicker] = useState(false);
   const [selectedRole, setSelectedRole] = useState('');
   const [userRole, setUserRole] = useState('');
-  const { setAuth } = useAuth();
+  const { auth, setAuth } = useAuth();
+  const { patients, setPatients } = usePatientData();
   const navigate = useNavigate();
 
   const loginWithWallet = async () => {
@@ -73,13 +76,20 @@ export default function Login() {
           });
         }
       }
-      navigate('/dashboard');
-  
+      
+      console.log('User role:', onChainRole);
+      if (onChainRole === 'admin') {
+        const allPatients = await fetchPatientData();
+        console.log(allPatients); 
+        setPatients(allPatients);  // populate global context
+      }
+
     } catch (err) {
       console.error(err);
       toast.error('Login failed');
     } finally {
       setLoading(false);
+      navigate('/dashboard');
       // Redirect to dashboard after login
     }
   };
@@ -189,7 +199,6 @@ async function registerRoleOnChain(selectedRole) {
         backgroundRepeat: 'no-repeat',
       }}
       >
-      {/* Add ToastContainer here */}
       <ToastContainer position="bottom-right" autoClose={5000} theme='colored' />
       
       <div className='flex flex-col items-center justify-center w-full  p-6'>
