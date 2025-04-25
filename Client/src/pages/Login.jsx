@@ -6,6 +6,7 @@ import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { useAuth } from "../context/AuthContext.jsx"; // import the hook
 import { jwtDecode } from "jwt-decode";// import jwt-decode
+import { useNavigate } from "react-router-dom";
 
 export default function Login() {
   const [address, setAddress] = useState('');
@@ -15,6 +16,7 @@ export default function Login() {
   const [selectedRole, setSelectedRole] = useState('');
   const [userRole, setUserRole] = useState('');
   const { setAuth } = useAuth();
+  const navigate = useNavigate();
 
   const loginWithWallet = async () => {
     setLoading(true);
@@ -54,6 +56,7 @@ export default function Login() {
 
       } else {
         setIsLoggedIn(true);
+        console.log('logged in: ',isLoggedIn);
         setUserRole(onChainRole);
         setShowRolePicker(false);
         toast.success(`Logged in with role ${onChainRole}`);
@@ -70,13 +73,14 @@ export default function Login() {
           });
         }
       }
+      navigate('/dashboard');
   
     } catch (err) {
       console.error(err);
       toast.error('Login failed');
     } finally {
-      
       setLoading(false);
+      // Redirect to dashboard after login
     }
   };
   
@@ -138,6 +142,8 @@ export default function Login() {
 
       toast.success(`Role set to ${selectedRole}`);
       setLoading(false);
+      navigate('/dashboard');
+
     } catch (err) {
       console.log(err);
       toast.error('Role selection failed');
