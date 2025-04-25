@@ -4,6 +4,8 @@ import axios from 'axios';
 import { contractAddress, contractABI } from '../contracts/UserRegistryContract.js';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import { useAuth } from "../context/AuthContext.jsx"; // import the hook
+import { jwtDecode } from "jwt-decode";// import jwt-decode
 
 export default function Login() {
   const [address, setAddress] = useState('');
@@ -12,6 +14,7 @@ export default function Login() {
   const [showRolePicker, setShowRolePicker] = useState(false);
   const [selectedRole, setSelectedRole] = useState('');
   const [userRole, setUserRole] = useState('');
+  const { setAuth } = useAuth();
 
   const loginWithWallet = async () => {
     setLoading(true);
@@ -36,8 +39,14 @@ export default function Login() {
         signature,
 
       });
-  
+      
       localStorage.setItem('accessToken', loginData.access);
+      const decoded = jwtDecode(loginData.access);
+      setAuth({
+        accessToken: loginData.access,
+        role: decoded.role,
+        walletid: decoded.wallet_address,
+      });
 
       if (!onChainRole) {
         setShowRolePicker(true);
@@ -66,6 +75,7 @@ export default function Login() {
       console.error(err);
       toast.error('Login failed');
     } finally {
+      
       setLoading(false);
     }
   };
@@ -106,12 +116,30 @@ export default function Login() {
       },{
         headers: { Authorization: `Bearer ${token}` }
       });
+
+      const { data: accessData } = await axios.post('http://localhost:8000/api/auth/get_access_token/', {
+        address,
+        role: selectedRole,
+      },{
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      console.log(accessData);
+      const decoded = jwtDecode(accessData.access);
+      console.log(decoded);
+      setAuth({
+        accessToken: accessData.access,
+        role: decoded.role,
+        walletid: decoded.wallet_address,
+      });
+
       setIsLoggedIn(true);
       setUserRole(selectedRole);
       setShowRolePicker(false);
+
       toast.success(`Role set to ${selectedRole}`);
       setLoading(false);
     } catch (err) {
+      console.log(err);
       toast.error('Role selection failed');
     }
   };

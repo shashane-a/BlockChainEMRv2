@@ -51,6 +51,19 @@ class WalletLoginView(APIView):
             "created": created,
         })
                 
+class GetAccessTokenView(APIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+    def post(self, request):
+        user = User.objects.get(wallet_address=request.data.get("address"))
+        refresh = RefreshToken.for_user(user)
+        refresh['wallet_address'] = user.wallet_address
+        refresh['role'] = user.role
+        return Response({
+            "refresh": str(refresh),
+            "access": str(refresh.access_token),
+            "role": user.role,
+        })
         
 class SetUserRoleView(APIView):
     authentication_classes = [JWTAuthentication]
