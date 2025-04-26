@@ -1,4 +1,4 @@
-export const contractAddress = "0xa6774b49769671bb9ec02b70c11dde2581842168";
+export const contractAddress = "0x214df2e834024a937696E2cE9A4769874CFd0F47";
 
 export const contractABI = [
   {
@@ -27,27 +27,14 @@ export const contractABI = [
         name: "provider",
         type: "address",
       },
-    ],
-    name: "AccessGranted",
-    type: "event",
-  },
-  {
-    anonymous: false,
-    inputs: [
       {
-        indexed: true,
-        internalType: "address",
-        name: "patient",
-        type: "address",
-      },
-      {
-        indexed: true,
-        internalType: "address",
-        name: "provider",
-        type: "address",
+        indexed: false,
+        internalType: "bool",
+        name: "granted",
+        type: "bool",
       },
     ],
-    name: "AccessRevoked",
+    name: "AccessChanged",
     type: "event",
   },
   {
@@ -80,39 +67,13 @@ export const contractABI = [
         name: "provider",
         type: "address",
       },
-    ],
-    name: "adminGrantAccess",
-    outputs: [],
-    stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
-    inputs: [
       {
-        internalType: "address",
-        name: "patient",
-        type: "address",
-      },
-      {
-        internalType: "address",
-        name: "provider",
-        type: "address",
+        internalType: "bool",
+        name: "grant",
+        type: "bool",
       },
     ],
-    name: "adminRevokeAccess",
-    outputs: [],
-    stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
-    inputs: [
-      {
-        internalType: "address",
-        name: "provider",
-        type: "address",
-      },
-    ],
-    name: "grantAccess",
+    name: "adminSetAccess",
     outputs: [],
     stateMutability: "nonpayable",
     type: "function",
@@ -143,8 +104,13 @@ export const contractABI = [
         name: "provider",
         type: "address",
       },
+      {
+        internalType: "bool",
+        name: "grant",
+        type: "bool",
+      },
     ],
-    name: "revokeAccess",
+    name: "setAccess",
     outputs: [],
     stateMutability: "nonpayable",
     type: "function",
@@ -174,51 +140,6 @@ export const contractABI = [
     type: "function",
   },
   {
-    inputs: [],
-    name: "getAllPatients",
-    outputs: [
-      {
-        internalType: "address[]",
-        name: "",
-        type: "address[]",
-      },
-    ],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [
-      {
-        internalType: "uint256",
-        name: "index",
-        type: "uint256",
-      },
-    ],
-    name: "getPatientAddress",
-    outputs: [
-      {
-        internalType: "address",
-        name: "",
-        type: "address",
-      },
-    ],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [],
-    name: "getPatientCount",
-    outputs: [
-      {
-        internalType: "uint256",
-        name: "",
-        type: "uint256",
-      },
-    ],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
     inputs: [
       {
         internalType: "address",
@@ -232,68 +153,6 @@ export const contractABI = [
         internalType: "string",
         name: "",
         type: "string",
-      },
-    ],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [
-      {
-        internalType: "uint256",
-        name: "",
-        type: "uint256",
-      },
-    ],
-    name: "patientAddresses",
-    outputs: [
-      {
-        internalType: "address",
-        name: "",
-        type: "address",
-      },
-    ],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [
-      {
-        internalType: "address",
-        name: "",
-        type: "address",
-      },
-    ],
-    name: "patientRecords",
-    outputs: [
-      {
-        internalType: "string",
-        name: "",
-        type: "string",
-      },
-    ],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [
-      {
-        internalType: "address",
-        name: "",
-        type: "address",
-      },
-      {
-        internalType: "address",
-        name: "",
-        type: "address",
-      },
-    ],
-    name: "recordAccess",
-    outputs: [
-      {
-        internalType: "bool",
-        name: "",
-        type: "bool",
       },
     ],
     stateMutability: "view",

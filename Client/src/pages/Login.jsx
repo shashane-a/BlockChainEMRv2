@@ -54,6 +54,7 @@ export default function Login() {
       });
 
       if (!onChainRole) {
+        console.log('No role on chain, show role picker');
         setShowRolePicker(true);
         setUserRole(""); 
 

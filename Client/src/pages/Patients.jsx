@@ -6,6 +6,7 @@ import { contractAddress as userRegistryAddress, contractABI as userRegistryABI 
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { usePatientData } from "../context/PatientDataContext";
+import axios from "axios";
 
 export default function Patients() {
 
@@ -44,6 +45,19 @@ export default function Patients() {
       const contract = new ethers.Contract(contractAddress, contractABI, signer);
       const tx = await contract.addPatientRecord(wallet_address, uploadResponse.cid);
       await tx.wait();
+
+      //add patient wallet address to django backend
+
+      const response = await axios.post('http://localhost:8000/api/patients/addPatient/', {
+        wallet_address: wallet_address,
+      }, {
+        headers: { Authorization: `Bearer ${localStorage.getItem("accessToken")}` },
+      });
+
+      if (response.status !== 200) {
+        console.error("Error adding patient to backend:", response.data);
+        toast.error("Error adding patient wallet to backend");
+      }
 
       const userRegistryContract = new ethers.Contract(userRegistryAddress, userRegistryABI, signer);
       const tx2 = await userRegistryContract.adminAddPatient(wallet_address);
