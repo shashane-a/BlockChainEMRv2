@@ -7,6 +7,8 @@ import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { usePatientData } from "../context/PatientDataContext";
 import axios from "axios";
+import { useAuth } from "../context/AuthContext.jsx";
+import { fetchPatientData, fetchPatientRecord } from "../utils/patients";
 
 export default function Patients() {
 
@@ -18,10 +20,25 @@ export default function Patients() {
     gender: "",
     wallet_address: "",
   });
+  
   const [loading, setLoading] = useState(false);
-  const { patients } = usePatientData();
+  const { patients, setPatients } = usePatientData();
+  const { auth } = useAuth();
 
-
+  // Add useEffect to fetch patients data when component mounts
+  useEffect(() => {
+    const loadPatients = async () => {
+      try {
+        const allPatients = await fetchPatientData();
+        setPatients(allPatients);
+      } catch (error) {
+        console.error("Error fetching patient data:", error);
+        toast.error("Failed to load patients data");
+      }
+    };
+    
+    loadPatients();
+  }, [setPatients]); // Only re-run when setPatients changes (which should be never)
 
   async function handleAddPatient(event) {
     event.preventDefault();
@@ -67,8 +84,26 @@ export default function Patients() {
       setLoading(false);
       setShowAddPatient(false);
 
+      setPatientForm({
+        first_name: "",
+        last_name: "",
+        date_of_birth: "",
+        gender: "",
+        wallet_address: "",
+      });
+
+      const allPatients = await fetchPatientData();
+      console.log(allPatients); 
+      setPatients(allPatients);
+
     } catch (error) {
       console.error("Error adding patient:", error);
+      if (error.message.includes("User already exists")) {
+        toast.error("User already exists in the registry.");
+      } else {
+        toast.error("Error adding patient. Please try again.");
+      }
+      setShowAddPatient(false);
       setLoading(false);
       return;
     } 
@@ -83,15 +118,18 @@ export default function Patients() {
     <div>
       <ToastContainer position="bottom-right" autoClose={5000} theme='colored' />
       <div className="p-4 flex flex-col gap-4">
-        <button 
-          onClick={() => setShowAddPatient(true)} 
-          className="self-start py-2 px-4 rounded bg-[#3F72AF] text-white font-semibold text-sm cursor-pointer" 
-          disabled={loading}
-        >
-          Add Patient
-        </button>
+        {auth.role === "admin" && (
+          <button 
+            onClick={() => setShowAddPatient(true)} 
+            className="self-start py-2 px-4 rounded bg-[#3F72AF] text-white font-semibold text-sm cursor-pointer" 
+            disabled={loading}
+          >
+            Add Patient
+          </button>
+        )}
+        
         <div>
-          <h2 className="text-xl font-bold text-gray-800">Patients List</h2>
+          <h2 className="text-2xl font-bold text-gray-800">Patients List</h2>
           {/* loop over patient array */}
           {patients.map((patient, index) => (
             <div key={index} className="border p-4 my-5 rounded shadow-sm bg-white">

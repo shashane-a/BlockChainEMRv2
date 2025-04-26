@@ -11,14 +11,14 @@ export default function Profile() {
       <div className="p-4 flex flex-col gap-4">
         {auth.role === "admin" && (
           <div>
-            <h2 className="text-xl font-bold text-gray-800">Admin Profile</h2>
+            <h2 className="text-2xl font-bold text-gray-800">Admin Profile</h2>
             {/* Admin specific content can go here */}
           </div>
         )}
         
         {auth.role === "patient" && (
           <div>
-            <h2 className="text-xl font-bold text-gray-800">My Patient Record</h2>
+            <h2 className="text-2xl font-bold text-gray-800">My Patient Record</h2>
             <div className="border p-4 my-5 rounded shadow-sm bg-white">
               <p><strong>Wallet Address:</strong> {patients[0]?.wallet_address}</p>
               <p><strong>First Name:</strong> {patients[0]?.first_name}</p>
@@ -31,7 +31,7 @@ export default function Profile() {
         
         {auth.role !== "patient" && auth.role !== "admin" && (
           <div>
-            <h2 className="text-xl font-bold text-gray-800">Profile</h2>
+            <h2 className="text-2xl font-bold text-gray-800">Profile</h2>
             <p>Welcome to your profile dashboard.</p>
           </div>
         )}

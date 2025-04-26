@@ -23,6 +23,7 @@ export default function Login() {
 
   const loginWithWallet = async () => {
     setLoading(true);
+    let onChainRole = null
     try {
       if (!window.ethereum) return toast.error('Please install MetaMask!');
       const provider = new ethers.BrowserProvider(window.ethereum);
@@ -31,7 +32,7 @@ export default function Login() {
       setAddress(userAddress);
   
       // 1. Always check blockchain for role
-      const onChainRole = await getRoleOnChain(userAddress);
+      onChainRole = await getRoleOnChain(userAddress);
   
       const { data: nonceData } = await axios.post('http://localhost:8000/api/auth/nonce/', {
         address: userAddress,
@@ -96,8 +97,9 @@ export default function Login() {
       toast.error('Login failed');
     } finally {
       setLoading(false);
-      navigate('/dashboard');
-      // Redirect to dashboard after login
+      if (onChainRole){
+        navigate('/dashboard');
+      }
     }
   };
   

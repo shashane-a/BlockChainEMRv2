@@ -72,6 +72,7 @@ export async function fetchPatientRecord(wallet_address) {
   const contract = new ethers.Contract(contractAddress, contractABI, provider);
   const cid = await contract.getPatientRecord(wallet_address);
 
+  console.log("CID from contract:", cid);
   const { data, contentType } = await pinata.gateways.private.get(cid);
   console.log("IPFS response:", data, contentType);
 

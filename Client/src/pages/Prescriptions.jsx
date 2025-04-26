@@ -1,8 +1,9 @@
 export default function Prescriptions() {
   return (
-    <div className="prescriptions">
-      <h1>Prescriptions</h1>
-      <p>View prescriptions here</p>
+    <div>
+      <div className="p-4 flex flex-col gap-4">
+        <h2 className="text-2xl font-bold text-gray-800">Prescriptions</h2>
+      </div>
     </div>
   );
 }
