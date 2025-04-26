@@ -1,4 +1,4 @@
-export const contractAddress = "0xE213A0dFB2fe66ceE716e410a75e15E5DD0Ce57f";
+export const contractAddress = "0x34c2cd66a6695c04196e3e24e164adba6709f828";
 
 export const contractABI = [
   {
@@ -43,6 +43,19 @@ export const contractABI = [
     ],
     name: "RoleRegistered",
     type: "event",
+  },
+  {
+    inputs: [
+      {
+        internalType: "address",
+        name: "patient",
+        type: "address",
+      },
+    ],
+    name: "adminAddPatient",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
   },
   {
     inputs: [

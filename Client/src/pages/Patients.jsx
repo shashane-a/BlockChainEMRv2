@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { ethers } from "ethers";
 import uploadJsonToIPFS from "../utils/ipfs.js";
 import { contractAddress, contractABI } from "../contracts/PatientRegistryContract";
+import { contractAddress as userRegistryAddress, contractABI as userRegistryABI } from "../contracts/UserRegistryContract";
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { usePatientData } from "../context/PatientDataContext";
@@ -43,6 +44,10 @@ export default function Patients() {
       const contract = new ethers.Contract(contractAddress, contractABI, signer);
       const tx = await contract.addPatientRecord(wallet_address, uploadResponse.cid);
       await tx.wait();
+
+      const userRegistryContract = new ethers.Contract(userRegistryAddress, userRegistryABI, signer);
+      const tx2 = await userRegistryContract.adminAddPatient(wallet_address);
+      await tx2.wait();
 
       toast.success("Patient added successfully!")
       setLoading(false);

@@ -11,7 +11,7 @@ const pinata = new PinataSDK({
   pinataGateway: pinata_credentials.pinataGateway,
 });
 
-export async function fetchPatientData(walletAddress) {
+export async function fetchPatientData() {
   // 1. Get provider (read-only is fine)
   const provider = new ethers.BrowserProvider(window.ethereum);
   const contract = new ethers.Contract(contractAddress, contractABI, provider);
@@ -31,4 +31,17 @@ export async function fetchPatientData(walletAddress) {
   }
 
   return patients;
+}
+
+export async function fetchPatientRecord(wallet_address) {
+  // 1. Get provider (read-only is fine)
+  const provider = new ethers.BrowserProvider(window.ethereum);
+  const contract = new ethers.Contract(contractAddress, contractABI, provider);
+  const cid = await contract.getPatientRecord(wallet_address);
+
+  const { data, contentType } = await pinata.gateways.private.get(cid);
+  console.log("IPFS response:", data, contentType);
+
+  const patient = { ...data, wallet_address, cid };
+  return patient;
 }
