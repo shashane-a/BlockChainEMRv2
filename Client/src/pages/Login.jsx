@@ -43,6 +43,7 @@ export default function Login() {
       const { data: loginData } = await axios.post('http://localhost:8000/api/auth/login/', {
         address: userAddress,
         signature,
+        role: onChainRole,
 
       });
       
@@ -67,6 +68,7 @@ export default function Login() {
         toast.success(`Logged in with role ${onChainRole}`);
         // (Optional) Sync backend role if different
         if (loginData.role !== onChainRole) {
+          console.log('Role mismatch, syncing...');
           // Call set_role to sync Django
           const token = localStorage.getItem('accessToken');
           console.log(token);
