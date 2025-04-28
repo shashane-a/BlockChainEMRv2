@@ -28,6 +28,7 @@ export default function Patients() {
   // Add useEffect to fetch patients data when component mounts
   useEffect(() => {
     const loadPatients = async () => {
+      if (auth.role !== "admin") return; // Only fetch if user is admin
       try {
         const allPatients = await fetchPatientData();
         setPatients(allPatients);
@@ -175,7 +176,7 @@ export default function Patients() {
                   <button onClick={() => setShowAddPatient(false)} type="button" className="mr-2 py-2 px-4 rounded bg-gray-300 text-gray-800 font-semibold">
                     Cancel
                   </button>
-                  <button type="submit" className="py-2 px-4 rounded bg-blue-600 text-white font-semibold" disabled={loading}>
+                  <button type="submit" className="py-2 px-4 rounded bg-[#3F72AF] text-white font-semibold" disabled={loading}>
                     {loading ? "Adding..." : "Add Patient"}
                   </button>
                 </div>

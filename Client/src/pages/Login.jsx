@@ -8,7 +8,7 @@ import { useAuth } from "../context/AuthContext.jsx"; // import the hook
 import { jwtDecode } from "jwt-decode";// import jwt-decode
 import { useNavigate } from "react-router-dom";
 import { usePatientData } from '../context/PatientDataContext.jsx';
-import { fetchPatientData, fetchPatientRecord } from "../utils/patients";
+import { fetchPatientData, fetchPatientRecord, fetchAccessiblePatients} from "../utils/patients";
 
 export default function Login() {
   const [address, setAddress] = useState('');
@@ -93,6 +93,12 @@ export default function Login() {
         console.log(patientData); 
         setPatients([patientData]);  // populate global context with single patient
       } 
+
+      if (onChainRole === 'provider') {
+        const accessiblePatients = await fetchAccessiblePatients(userAddress);
+        console.log(accessiblePatients); 
+        setPatients(accessiblePatients);  // populate global context with accessible patients
+      }
 
     } catch (err) {
       console.error(err);

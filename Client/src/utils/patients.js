@@ -6,7 +6,6 @@ import {
 import { PinataSDK } from "pinata";
 import pinata_credentials from "./config";
 import axios from "axios";
-import { useAuth } from "../context/AuthContext.jsx";
 
 const pinata = new PinataSDK({
   pinataJwt: pinata_credentials.pinataJwt,
@@ -78,4 +77,76 @@ export async function fetchPatientRecord(wallet_address) {
 
   const patient = { ...data, wallet_address, cid };
   return patient;
+}
+
+export async function fetchAccessiblePatients(providerAddress) {
+  const provider = new ethers.BrowserProvider(window.ethereum);
+  const contract = new ethers.Contract(contractAddress, contractABI, provider);
+
+  console.log("Provider address:", providerAddress);
+
+  //get patient count from django backend
+  const response = await axios.get(
+    "http://localhost:8000/api/patients/getPatientCount/",
+    {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+      },
+    }
+  );
+
+  const count = response.data.patient_count;
+  console.log("Patient count from backend:", count);
+
+  const patients = [];
+
+  for (let i = 0; i < count; i++) {
+    // const address = await contract.getPatientAddress(i);
+
+    console.log(localStorage.getItem("accessToken"));
+    const response = await axios.get(
+      "http://localhost:8000/api/patients/getPatientWalletAddress/?index=" +
+        `${i + 1}`,
+      {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+        },
+      }
+    );
+
+    console.log(response.data.wallet_address);
+
+    // Check if the user has access to the patient record
+
+    console.log("Checking access for provider:", providerAddress);
+    console.log("patient wallet:", response.data.wallet_address);
+
+    const hasAccess = await contract.canProviderAccess(
+      response.data.wallet_address,
+      providerAddress
+    );
+
+    console.log("Access status:", hasAccess);
+
+    if (hasAccess) {
+      console.log(
+        "User has access to patient record:",
+        response.data.wallet_address
+      );
+
+      const cid = await contract.getPatientRecord(response.data.wallet_address);
+
+      // 3. Fetch from IPFS (Pinata gateway or public IPFS)
+      const { data, contentType } = await pinata.gateways.private.get(cid);
+      console.log("IPFS response:", data, contentType);
+
+      patients.push({
+        ...data,
+        wallet_address: response.data.wallet_address,
+        cid,
+      });
+    }
+  }
+
+  return patients;
 }
