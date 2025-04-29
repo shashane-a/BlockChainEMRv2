@@ -6,6 +6,7 @@ import {
 import { PinataSDK } from "pinata";
 import pinata_credentials from "./config";
 import axios from "axios";
+import { decryptPatientData } from "./encryption"; // Import your decryption function
 
 const pinata = new PinataSDK({
   pinataJwt: pinata_credentials.pinataJwt,
@@ -69,6 +70,7 @@ export async function fetchPatientRecord(wallet_address) {
   // 1. Get provider (read-only is fine)
   const provider = new ethers.BrowserProvider(window.ethereum);
   const contract = new ethers.Contract(contractAddress, contractABI, provider);
+  console.log("Fetching patient record for wallet:", wallet_address);
   const cid = await contract.getPatientRecord(wallet_address);
 
   console.log("CID from contract:", cid);
@@ -114,7 +116,7 @@ export async function fetchAccessiblePatients(providerAddress) {
       }
     );
 
-    console.log(response.data.wallet_address);
+    console.log("reponse", response.data.wallet_address);
 
     // Check if the user has access to the patient record
 
@@ -134,6 +136,7 @@ export async function fetchAccessiblePatients(providerAddress) {
         response.data.wallet_address
       );
 
+      console.log("Fetching CID for patient:", response.data.wallet_address);
       const cid = await contract.getPatientRecord(response.data.wallet_address);
 
       // 3. Fetch from IPFS (Pinata gateway or public IPFS)
@@ -149,4 +152,45 @@ export async function fetchAccessiblePatients(providerAddress) {
   }
 
   return patients;
+}
+
+export async function fetchAndDecryptPatient(walletAddress) {
+  try {
+    if (!window.ethereum) throw new Error("MetaMask not detected!");
+
+    console.log("Fetching patient record for wallet:", walletAddress);
+
+    // 🔥 Connect to Ethereum blockchain
+    const provider = new ethers.BrowserProvider(window.ethereum);
+    const contract = new ethers.Contract(
+      contractAddress,
+      contractABI,
+      provider
+    );
+
+    const cid = await contract.getPatientRecord(walletAddress);
+    console.log("CID from smart contract:", cid);
+
+    if (!cid || cid === "") {
+      throw new Error("No patient record found for this wallet.");
+    }
+
+    // const gatewayUrl = `https://gateway.pinata.cloud/ipfs/${cid}`;
+    // const response = await axios.get(gatewayUrl);
+    // const encryptedDataPackage = response.data;
+
+    const { data, contentType } = await pinata.gateways.private.get(cid);
+    console.log("IPFS response:", data, contentType);
+
+    console.log("Encrypted data package:", data);
+
+    const patientData = await decryptPatientData(data);
+
+    console.log("Successfully decrypted patient data:", patientData);
+
+    return patientData;
+  } catch (error) {
+    console.error("Error fetching or decrypting patient:", error);
+    throw error;
+  }
 }

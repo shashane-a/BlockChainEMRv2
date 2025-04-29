@@ -8,7 +8,7 @@ import { useAuth } from "../context/AuthContext.jsx"; // import the hook
 import { jwtDecode } from "jwt-decode";// import jwt-decode
 import { useNavigate } from "react-router-dom";
 import { usePatientData } from '../context/PatientDataContext.jsx';
-import { fetchPatientData, fetchPatientRecord, fetchAccessiblePatients} from "../utils/patients";
+import { fetchPatientData, fetchPatientRecord, fetchAccessiblePatients, fetchAndDecryptPatient} from "../utils/patients";
 
 export default function Login() {
   const [address, setAddress] = useState('');
@@ -82,22 +82,52 @@ export default function Login() {
       }
       
       console.log('User role:', onChainRole);
+      // if (onChainRole === 'admin') {
+      //   const allPatients = await fetchPatientData();
+      //   console.log(allPatients); 
+      //   setPatients(allPatients);  // populate global context
+      // }
+
       if (onChainRole === 'admin') {
-        const allPatients = await fetchPatientData();
-        console.log(allPatients); 
-        setPatients(allPatients);  // populate global context
+        const allPatients = await fetchPatientData();  // still fetch all patients (encrypted)
+        const decryptedPatients = [];
+      
+        for (const patient of allPatients) {
+          try {
+            const decrypted = await fetchAndDecryptPatient(patient.wallet_address);
+            decryptedPatients.push(decrypted);
+          } catch (error) {
+            console.error(`Failed to decrypt patient ${patient.wallet_address}:`, error);
+          }
+        }
+      
+        console.log("Decrypted patients for Admin:", decryptedPatients);
+        setPatients(decryptedPatients);
       }
 
       if (onChainRole === 'patient') {
-        const patientData = await fetchPatientRecord(userAddress);
-        console.log(patientData); 
-        setPatients([patientData]);  // populate global context with single patient
-      } 
+        const encryptedPatient = await fetchAndDecryptPatient(userAddress);
+        console.log(encryptedPatient);
+        setPatients([encryptedPatient]);
+      }
+      
 
       if (onChainRole === 'provider') {
-        const accessiblePatients = await fetchAccessiblePatients(userAddress);
-        console.log(accessiblePatients); 
-        setPatients(accessiblePatients);  // populate global context with accessible patients
+        const accessiblePatients = await fetchAccessiblePatients(userAddress);  // list of patients accessible
+        const decryptedPatients = [];
+        console.log("Accessible patients:", accessiblePatients);
+      
+        for (const patient of accessiblePatients) {
+          try {
+            const decrypted = await fetchAndDecryptPatient(patient.wallet_address);
+            decryptedPatients.push(decrypted);
+          } catch (error) {
+            console.error(`Failed to decrypt patient ${patient.wallet_address}:`, error);
+          }
+        }
+      
+        console.log(decryptedPatients);
+        setPatients(decryptedPatients);
       }
 
     } catch (err) {

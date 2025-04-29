@@ -8,7 +8,8 @@ import 'react-toastify/dist/ReactToastify.css';
 import { usePatientData } from "../context/PatientDataContext";
 import axios from "axios";
 import { useAuth } from "../context/AuthContext.jsx";
-import { fetchPatientData, fetchPatientRecord } from "../utils/patients";
+import { fetchPatientData, fetchPatientRecord, fetchAndDecryptPatient, fetchAccessiblePatients } from "../utils/patients";
+import { prepareEncryptedData } from "../utils/encryption"; 
 
 export default function Patients() {
 
@@ -28,14 +29,52 @@ export default function Patients() {
   // Add useEffect to fetch patients data when component mounts
   useEffect(() => {
     const loadPatients = async () => {
-      if (auth.role !== "admin") return; // Only fetch if user is admin
-      try {
-        const allPatients = await fetchPatientData();
-        setPatients(allPatients);
-      } catch (error) {
-        console.error("Error fetching patient data:", error);
-        toast.error("Failed to load patients data");
+      // if (auth.role !== "admin") return; // Only fetch if user is admin
+      // try {
+      //   const allPatients = await fetchPatientData();
+      //   setPatients(allPatients);
+      // } catch (error) {
+      //   console.error("Error fetching patient data:", error);
+      //   toast.error("Failed to load patients data");
+      // }
+      toast.info("Fetching and decrypting data...")
+
+      if (auth.role == "admin"){
+        console.log('fetching patient data for admin');
+        const allPatients = await fetchPatientData();  // still fetch all patients (encrypted)
+          const decryptedPatients = [];
+        
+          for (const patient of allPatients) {
+            try {
+              const decrypted = await fetchAndDecryptPatient(patient.wallet_address);
+              decryptedPatients.push(decrypted);
+            } catch (error) {
+              console.error(`Failed to decrypt patient ${patient.wallet_address}:`, error);
+            }
+          }
+        
+          console.log("Decrypted patients for Admin:", decryptedPatients);
+          setPatients(decryptedPatients);
       }
+      else if (auth.role == "provider"){
+        console.log('auth',auth);
+        const accessiblePatients = await fetchAccessiblePatients(auth.walletid);  // list of patients accessible
+        const decryptedPatients = [];
+        console.log("Accessible patients:", accessiblePatients);
+      
+        for (const patient of accessiblePatients) {
+          try {
+            const decrypted = await fetchAndDecryptPatient(patient.wallet_address);
+            decryptedPatients.push(decrypted);
+          } catch (error) {
+            console.error(`Failed to decrypt patient ${patient.wallet_address}:`, error);
+          }
+        }
+      
+        console.log(decryptedPatients);
+        setPatients(decryptedPatients);
+      }
+      
     };
     
     loadPatients();
@@ -50,15 +89,27 @@ export default function Patients() {
       const provider = new ethers.BrowserProvider(window.ethereum);
       const signer = await provider.getSigner();
       const wallet_address = patientForm.wallet_address;
+      const adminAddress = await signer.getAddress();
 
-      const uploadResponse = await uploadJsonToIPFS(patientForm, "patient.json");
+      // Determine which addresses need access to this data
+      const authorizedWallets = [
+        wallet_address,  // The patient
+        adminAddress,    // The admin adding the patient
+        // Additional providers could be added here
+      ];
+
+      const encryptedDataPackage = await prepareEncryptedData(patientForm, authorizedWallets);
+      console.log("Encrypted package ready:", encryptedDataPackage);
+
+      const uploadResponse = await uploadJsonToIPFS(encryptedDataPackage, `${wallet_address}.json`);
+      console.log("Upload response:", uploadResponse);
+      
       if (!uploadResponse) {
         console.error("Error uploading to IPFS");
         toast.error("Error uploading to IPFS");
         setLoading(false);
         return;
       }
-      console.log("IPFS upload response:", uploadResponse);
 
       const contract = new ethers.Contract(contractAddress, contractABI, signer);
       const tx = await contract.addPatientRecord(wallet_address, uploadResponse.cid);
