@@ -22,31 +22,108 @@ export default function Access() {
   async function handlePatientAccess(access) {
     const providerAddress = access ? providerAccessAddress : providerRevokeAddress;
 
-    // if (!providerAddress) {
-    //   toast.error("Please enter wallet address");
-    //   return;
-    // }
+    if (!providerAddress) {
+      toast.error("Please enter wallet address");
+      return;
+    }
 
-    // access ? setAccessLoading(true) : setRevokeLoading(true);
-    // const provider = new ethers.BrowserProvider(window.ethereum);
-    // const signer = await provider.getSigner();
+    access ? setAccessLoading(true) : setRevokeLoading(true);
+    const provider = new ethers.BrowserProvider(window.ethereum);
+    const signer = await provider.getSigner();
 
-    // const contract = new ethers.Contract(contractAddress, contractABI, signer);
+    const contract = new ethers.Contract(contractAddress, contractABI, signer);
 
-    // try {
-    //   const tx = await contract.setAccess(providerAddress, access);
-    //   await tx.wait();
-    //   console.log(`Access ${access ? 'granted' : 'revoked'} successfully:`, tx);
-    //   toast.success(`Access ${access ? 'granted' : 'revoked'} successfully!`);
-    //   setProviderAccessAddress("");
-    //   setProviderRevokeAddress("");
-    // } catch (error) {
-    //   console.error(`Error ${access ? 'granting' : 'revoking'} access:`, error);
-    //   toast.error(`Error ${access ? 'granting' : 'revoking'}. Please try again.`);
-    // } finally {
-    //   setAccessLoading(false);
-    //   setRevokeLoading(false);
-    // }
+    try {
+      const tx = await contract.setAccess(providerAddress, access);
+      await tx.wait();
+      console.log(`Access ${access ? 'granted' : 'revoked'} successfully:`, tx);
+      toast.success(`Access ${access ? 'granted' : 'revoked'} successfully!`);
+      setProviderAccessAddress("");
+      setProviderRevokeAddress("");
+    } catch (error) {
+      console.error(`Error ${access ? 'granting' : 'revoking'} access:`, error);
+      toast.error(`Error ${access ? 'granting' : 'revoking'}. Please try again.`);
+    } 
+
+    //add provider address to patient record
+    if (access) {
+      try {
+        const encrypted = await getEncryptedData(auth.walletid);
+        console.log("Encrypted patient data in access page:", encrypted); 
+
+        //get encrypted key for provider address
+        const newEncryptedKey = await decryptAESkeyAndEncrypt(encrypted, providerAddress, auth.walletid);
+        console.log("New encrypted key for provider address:", newEncryptedKey);
+
+        //update encrypted data with new encrypted key by adding it to the keys object
+        const encryptedDataWithNewKey = {
+          ...encrypted,
+          keys: {
+            ...encrypted.keys,
+            [providerAddress]: newEncryptedKey,
+          },
+        }
+
+        console.log("Encrypted data with new key:", encryptedDataWithNewKey);
+
+        //upload new encrypted data to IPFS
+        const response = await uploadJsonToIPFS(encryptedDataWithNewKey, auth.walletid);
+        console.log("CID of new encrypted data:", response.cid);
+
+        //update smart contract with new cid
+        const provider = new ethers.BrowserProvider(window.ethereum);
+        const signer = await provider.getSigner();
+        const contract = new ethers.Contract(contractAddress, contractABI, signer);
+
+        const tx = await contract.updatePatientRecord(auth.walletid, response.cid);
+        await tx.wait();
+        console.log("Updated patient record successfully:", tx);
+        toast.success("Updated patient record successfully!");
+
+      } catch (error) {
+        console.error("Error fetching and decrypting patient data:", error);
+      } finally {
+        setAccessLoading(false);
+        setRevokeLoading(false);
+      }
+    } else{
+      console.log("Revoking access from provider address:", providerAddress);
+        try {
+          const encrypted = await getEncryptedData(auth.walletid);
+          console.log("Encrypted patient data in access page:", encrypted); 
+
+          //remove provider address from keys object
+          const { [providerAddress]: _, ...newKeys } = encrypted.keys;
+          console.log("New keys object:", newKeys);
+
+          //update encrypted data with new keys object
+          const encryptedDataWithNewKeys = {
+            ...encrypted,
+            keys: newKeys,
+          }
+          console.log("Encrypted data with new keys:", encryptedDataWithNewKeys);
+          
+          //upload new encrypted data to IPFS
+          const response = await uploadJsonToIPFS(encryptedDataWithNewKeys, providerAddress);
+          console.log("CID of new encrypted data:", response.cid);
+
+          //update smart contract with new cid
+          const provider = new ethers.BrowserProvider(window.ethereum);
+          const signer = await provider.getSigner();
+          const contract = new ethers.Contract(contractAddress, contractABI, signer);
+
+          const tx = await contract.updatePatientRecord(auth.walletid, response.cid);
+          await tx.wait();
+          console.log("Updated patient record successfully:", tx);
+          toast.success("Updated patient record successfully!");
+
+        } catch (error) {
+          console.error("Error fetching and decrypting patient data:", error);
+        } finally {
+          setAccessLoading(false);
+          setRevokeLoading(false);
+        }
+    }
   }
 
   async function handleAdminAccess(access) {
