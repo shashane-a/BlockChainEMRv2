@@ -195,7 +195,6 @@ export async function getEncryptedData(walletAddress) {
 
     console.log("Fetching patient record for wallet:", walletAddress);
 
-    // 🔥 Connect to Ethereum blockchain
     const provider = new ethers.BrowserProvider(window.ethereum);
     const contract = new ethers.Contract(
       contractAddress,

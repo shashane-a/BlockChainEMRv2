@@ -79,46 +79,84 @@ export default function Access() {
     } 
 
     //add provider address to patient record
-    try {
-      const encrypted = await getEncryptedData(patientAccessAddress);
-      console.log("Encrypted patient data in access page:", encrypted); 
+    if (access) {
+      try {
+        const encrypted = await getEncryptedData(patientAccessAddress);
+        console.log("Encrypted patient data in access page:", encrypted); 
 
-      //get encrypted key for provider address
-      const newEncryptedKey = await decryptAESkeyAndEncrypt(encrypted, providerAccessAddress, auth.walletid);
-      console.log("New encrypted key for provider address:", newEncryptedKey);
+        //get encrypted key for provider address
+        const newEncryptedKey = await decryptAESkeyAndEncrypt(encrypted, providerAccessAddress, auth.walletid);
+        console.log("New encrypted key for provider address:", newEncryptedKey);
 
-      //update encrypted data with new encrypted key by adding it to the keys object
-      const encryptedDataWithNewKey = {
-        ...encrypted,
-        keys: {
-          ...encrypted.keys,
-          [providerAccessAddress]: newEncryptedKey,
-        },
+        //update encrypted data with new encrypted key by adding it to the keys object
+        const encryptedDataWithNewKey = {
+          ...encrypted,
+          keys: {
+            ...encrypted.keys,
+            [providerAccessAddress]: newEncryptedKey,
+          },
+        }
+
+        console.log("Encrypted data with new key:", encryptedDataWithNewKey);
+
+        //upload new encrypted data to IPFS
+        const response = await uploadJsonToIPFS(encryptedDataWithNewKey, patientAccessAddress);
+        console.log("CID of new encrypted data:", response.cid);
+
+        //update smart contract with new cid
+        const provider = new ethers.BrowserProvider(window.ethereum);
+        const signer = await provider.getSigner();
+        const contract = new ethers.Contract(contractAddress, contractABI, signer);
+
+        const tx = await contract.updatePatientRecord(patientAccessAddress, response.cid);
+        await tx.wait();
+        console.log("Updated patient record successfully:", tx);
+        toast.success("Updated patient record successfully!");
+
+      } catch (error) {
+        console.error("Error fetching and decrypting patient data:", error);
+      } finally {
+        setAccessLoading(false);
+        setRevokeLoading(false);
       }
+    } else {
+        console.log("Revoking access from provider address:", providerAddress);
+        try {
+          const encrypted = await getEncryptedData(patientRevokeAddress);
+          console.log("Encrypted patient data in access page:", encrypted); 
 
-      console.log("Encrypted data with new key:", encryptedDataWithNewKey);
+          //remove provider address from keys object
+          const { [providerAddress]: _, ...newKeys } = encrypted.keys;
+          console.log("New keys object:", newKeys);
 
-      //upload new encrypted data to IPFS
-      const response = await uploadJsonToIPFS(encryptedDataWithNewKey, patientAccessAddress);
-      console.log("CID of new encrypted data:", response.cid);
+          //update encrypted data with new keys object
+          const encryptedDataWithNewKeys = {
+            ...encrypted,
+            keys: newKeys,
+          }
+          console.log("Encrypted data with new keys:", encryptedDataWithNewKeys);
+          
+          //upload new encrypted data to IPFS
+          const response = await uploadJsonToIPFS(encryptedDataWithNewKeys, patientRevokeAddress);
+          console.log("CID of new encrypted data:", response.cid);
 
-      //update smart contract with new cid
-      const provider = new ethers.BrowserProvider(window.ethereum);
-      const signer = await provider.getSigner();
-      const contract = new ethers.Contract(contractAddress, contractABI, signer);
+          //update smart contract with new cid
+          const provider = new ethers.BrowserProvider(window.ethereum);
+          const signer = await provider.getSigner();
+          const contract = new ethers.Contract(contractAddress, contractABI, signer);
 
-      const tx = await contract.updatePatientRecord(patientAccessAddress, response.cid);
-      await tx.wait();
-      console.log("Updated patient record successfully:", tx);
-      toast.success("Updated patient record successfully!");
+          const tx = await contract.updatePatientRecord(patientRevokeAddress, response.cid);
+          await tx.wait();
+          console.log("Updated patient record successfully:", tx);
+          toast.success("Updated patient record successfully!");
 
-    } catch (error) {
-      console.error("Error fetching and decrypting patient data:", error);
-    } finally {
-      setAccessLoading(false);
-      setRevokeLoading(false);
+        } catch (error) {
+          console.error("Error fetching and decrypting patient data:", error);
+        } finally {
+          setAccessLoading(false);
+          setRevokeLoading(false);
+        }
     }
-    
   }
 
   return (
