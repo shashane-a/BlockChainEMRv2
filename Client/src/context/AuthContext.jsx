@@ -13,7 +13,7 @@ export function AuthProvider({ children }) {
       return {
         accessToken: token,
         role: decoded.role,
-        walletid: decoded.walletid,
+        walletid: decoded.wallet_address,
       };
     }
     return { accessToken: null, role: null, walletid: null };

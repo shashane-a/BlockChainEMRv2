@@ -156,3 +156,33 @@ export async function decryptPatientData(encryptedDataPackage) {
 
   return patientData;
 }
+
+export async function decryptAESkeyAndEncrypt(
+  encryptedDataPackage,
+  newWalletAddress,
+  userWalletAddress
+) {
+  //first decrypt the AES key
+  console.log(encryptedDataPackage.keys);
+  console.log("userWalletAddress:", userWalletAddress);
+  const aesKeyBase64 = encryptedDataPackage.keys[userWalletAddress];
+  console.log("AES key base64:", aesKeyBase64);
+  const aesKeyBytes = Uint8Array.from(atob(aesKeyBase64), (c) =>
+    c.charCodeAt(0)
+  );
+  const aesKey = await importAESKey(aesKeyBytes.buffer);
+  console.log("AES key:", aesKey);
+
+  console.log(aesKey);
+
+  const exportedAESKey = await exportAESKey(aesKey);
+
+  //ecnrypt AES key with base64 (for now)
+  const newAESKeyBase64 = btoa(
+    String.fromCharCode(...new Uint8Array(exportedAESKey))
+  );
+
+  console.log(`encrypted AES key for ${newWalletAddress}:`, newAESKeyBase64);
+
+  return newAESKeyBase64;
+}

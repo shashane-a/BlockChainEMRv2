@@ -1,4 +1,4 @@
-export const contractAddress = "0x60db31d57e8adb85a0bc4b8ef87f33465279ea2e";
+export const contractAddress = "0x96d347016F25E541C64E5AcD8B632857d3898688";
 
 export const contractABI = [
   {
@@ -123,6 +123,24 @@ export const contractABI = [
         type: "address",
       },
       {
+        internalType: "string",
+        name: "newCid",
+        type: "string",
+      },
+    ],
+    name: "updatePatientRecord",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "address",
+        name: "patient",
+        type: "address",
+      },
+      {
         internalType: "address",
         name: "provider",
         type: "address",
@@ -153,6 +171,25 @@ export const contractABI = [
         internalType: "string",
         name: "",
         type: "string",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "address",
+        name: "provider",
+        type: "address",
+      },
+    ],
+    name: "getPatientsForProvider",
+    outputs: [
+      {
+        internalType: "address[]",
+        name: "",
+        type: "address[]",
       },
     ],
     stateMutability: "view",

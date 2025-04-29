@@ -26,43 +26,16 @@ export default function Patients() {
   const { patients, setPatients } = usePatientData();
   const { auth } = useAuth();
 
-  // Add useEffect to fetch patients data when component mounts
-  useEffect(() => {
-    const loadPatients = async () => {
-      // if (auth.role !== "admin") return; // Only fetch if user is admin
-      // try {
-      //   const allPatients = await fetchPatientData();
-      //   setPatients(allPatients);
-      // } catch (error) {
-      //   console.error("Error fetching patient data:", error);
-      //   toast.error("Failed to load patients data");
-      // }
-      toast.info("Fetching and decrypting data...")
 
-      if (auth.role == "admin"){
-        console.log('fetching patient data for admin');
-        const allPatients = await fetchPatientData();  // still fetch all patients (encrypted)
-          const decryptedPatients = [];
-        
-          for (const patient of allPatients) {
-            try {
-              const decrypted = await fetchAndDecryptPatient(patient.wallet_address);
-              decryptedPatients.push(decrypted);
-            } catch (error) {
-              console.error(`Failed to decrypt patient ${patient.wallet_address}:`, error);
-            }
-          }
-        
-          console.log("Decrypted patients for Admin:", decryptedPatients);
-          setPatients(decryptedPatients);
-      }
-      else if (auth.role == "provider"){
-        console.log('auth',auth);
-        const accessiblePatients = await fetchAccessiblePatients(auth.walletid);  // list of patients accessible
+  const loadPatients = async () => {
+    toast.info("Fetching and decrypting data...")
+
+    if (auth.role == "admin"){
+      console.log('fetching patient data for admin');
+      const allPatients = await fetchPatientData();  // still fetch all patients (encrypted)
         const decryptedPatients = [];
-        console.log("Accessible patients:", accessiblePatients);
       
-        for (const patient of accessiblePatients) {
+        for (const patient of allPatients) {
           try {
             const decrypted = await fetchAndDecryptPatient(patient.wallet_address);
             decryptedPatients.push(decrypted);
@@ -71,12 +44,32 @@ export default function Patients() {
           }
         }
       
-        console.log(decryptedPatients);
+        console.log("Decrypted patients for Admin:", decryptedPatients);
         setPatients(decryptedPatients);
-      }
-      
-    };
+    }
+    else if (auth.role == "provider"){
+      console.log('auth',auth);
+      const accessiblePatients = await fetchAccessiblePatients(auth.walletid);  // list of patients accessible
+      const decryptedPatients = [];
+      console.log("Accessible patients:", accessiblePatients);
     
+      for (const patient of accessiblePatients) {
+        try {
+          const decrypted = await fetchAndDecryptPatient(patient.wallet_address);
+          decryptedPatients.push(decrypted);
+        } catch (error) {
+          console.error(`Failed to decrypt patient ${patient.wallet_address}:`, error);
+        }
+      }
+    
+      console.log(decryptedPatients);
+      setPatients(decryptedPatients);
+    }
+    
+  };
+
+  // Add useEffect to fetch patients data when component mounts
+  useEffect(() => {
     loadPatients();
   }, [setPatients]); // Only re-run when setPatients changes (which should be never)
 
@@ -146,7 +139,7 @@ export default function Patients() {
 
       const allPatients = await fetchPatientData();
       console.log(allPatients); 
-      setPatients(allPatients);
+      loadPatients(); // Refresh the patient list after adding a new one
 
     } catch (error) {
       console.error("Error adding patient:", error);
