@@ -109,6 +109,7 @@ export default function Login() {
         const encryptedPatient = await fetchAndDecryptPatient(userAddress);
         console.log(encryptedPatient);
         setPatients([encryptedPatient]);
+        console.log("Decrypted patient data:", encryptedPatient);
       }
       
 

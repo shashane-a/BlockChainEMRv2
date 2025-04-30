@@ -12,6 +12,7 @@ import Analytics from "./pages/Analytics";
 import Access from "./pages/Access";
 import AuthRedirect from "./components/AuthRedirect"; // import the redirector
 import { PatientDataProvider } from "./context/PatientDataContext";
+import PatientView from "./pages/PatientView";
 
 function Layout() {
   const location = useLocation();
@@ -69,6 +70,7 @@ function Layout() {
                 <Profile />
               </ProtectedRoute>
             } />
+            <Route path="/patients/:walletAddress" element={<PatientView />} />
             <Route path="/unauthorized" element={<Unauthorized />} />
             <Route path="*" element={<AuthRedirect />} />
           </Routes>
