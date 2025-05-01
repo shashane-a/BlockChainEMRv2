@@ -143,7 +143,13 @@ export async function decryptPatientData(encryptedDataPackage) {
   }
   // Get the AES key from base64
   const encryptedKey = encryptedDataPackage.keys[matchingKey];
-  const aesKey = await decryptAESKeyFromMetaMask(encryptedKey);
+
+  let aesKey = await getCachedAESKey(encryptedDataPackage.wallet_address);
+
+  if (!aesKey) {
+    aesKey = await decryptAESKeyFromMetaMask(encryptedKey);
+    cacheAESKey(aesKey, encryptedDataPackage.wallet_address);
+  }
 
   // Decode encrypted data and IV
   const encryptedData = Uint8Array.from(atob(encryptedDataPackage.data), (c) =>
@@ -157,6 +163,27 @@ export async function decryptPatientData(encryptedDataPackage) {
   const patientData = await decryptWithAES(aesKey, encryptedData, iv);
 
   return patientData;
+}
+
+export async function cacheAESKey(aesKey, walletAddress) {
+  const exportedAESKey = await exportAESKey(aesKey);
+  const aesKeyBase64 = btoa(
+    String.fromCharCode(...new Uint8Array(exportedAESKey))
+  );
+
+  sessionStorage.setItem(walletAddress, aesKeyBase64);
+  console.log("Cached AES key for wallet:", walletAddress);
+}
+
+export async function getCachedAESKey(walletAddress) {
+  const aesKeyBase64 = sessionStorage.getItem(walletAddress);
+  if (!aesKeyBase64) return null;
+
+  const aesKeyBuffer = Uint8Array.from(atob(aesKeyBase64), (c) =>
+    c.charCodeAt(0)
+  ).buffer;
+
+  return await importAESKey(aesKeyBuffer);
 }
 
 export async function decryptAESkeyAndEncrypt(
@@ -173,21 +200,6 @@ export async function decryptAESkeyAndEncrypt(
   );
   return newEncryptedKey;
 }
-
-// async function encryptAESKeyForWallet(exportedAESKeyBuffer, walletAddress) {
-//   const publicKey = await window.ethereum.request({
-//     method: "eth_getEncryptionPublicKey",
-//     params: [walletAddress],
-//   });
-
-//   const encrypted = ethSigUtil.encrypt({
-//     publicKey,
-//     data: Buffer.from(exportedAESKeyBuffer).toString("base64"),
-//     version: "x25519-xsalsa20-poly1305",
-//   });
-
-//   return btoa(JSON.stringify(encrypted));
-// }
 
 async function encryptAESKeyForWallet(exportedAESKeyBuffer, walletAddress) {
   const publicKey = await window.ethereum.request({
@@ -207,39 +219,6 @@ async function encryptAESKeyForWallet(exportedAESKeyBuffer, walletAddress) {
   // Base64 encode the entire encrypted object for storage/transmission
   return btoa(JSON.stringify(encrypted));
 }
-
-// async function decryptAESKeyFromMetaMask(encryptedKeyBase64) {
-//   const encryptedObj = JSON.parse(atob(encryptedKeyBase64));
-
-//   const decryptedBase64 = await window.ethereum.request({
-//     method: "eth_decrypt",
-//     params: [
-//       JSON.stringify(encryptedObj),
-//       (await ethereum.request({ method: "eth_accounts" }))[0],
-//     ],
-//   });
-
-//   const keyBuffer = Uint8Array.from(atob(decryptedBase64), (c) =>
-//     c.charCodeAt(0)
-//   );
-//   return await importAESKey(keyBuffer.buffer);
-// }
-
-// export async function decryptAESKeyFromMetaMask(encryptedKeyBase64) {
-//   const encryptedObj = JSON.parse(atob(encryptedKeyBase64));
-//   console.log("Encrypted object:", encryptedObj);
-
-//   const accounts = await window.ethereum.request({ method: "eth_accounts" });
-//   const decryptedBase64 = await window.ethereum.request({
-//     method: "eth_decrypt",
-//     params: [JSON.stringify(encryptedObj), accounts[0]],
-//   });
-
-//   const keyBuffer = Uint8Array.from(atob(decryptedBase64), (c) =>
-//     c.charCodeAt(0)
-//   );
-//   return await importAESKey(keyBuffer.buffer);
-// }
 
 export async function decryptAESKeyFromMetaMask(encryptedKeyBase64) {
   const encryptedObj = JSON.parse(atob(encryptedKeyBase64));

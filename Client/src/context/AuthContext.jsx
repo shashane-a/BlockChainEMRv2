@@ -35,6 +35,7 @@ export function AuthProvider({ children }) {
   const logout = () => {
     setAuth({ accessToken: null, role: null, walletid: null });
     localStorage.removeItem("accessToken");
+    sessionStorage.clear(); // Clear session storage on logout
   };
 
   return (
