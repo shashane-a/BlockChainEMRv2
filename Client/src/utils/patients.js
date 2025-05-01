@@ -220,3 +220,35 @@ export async function getEncryptedData(walletAddress) {
     throw error;
   }
 }
+
+export async function getEncryptedKeys(walletAddress) {
+  try {
+    if (!window.ethereum) throw new Error("MetaMask not detected!");
+
+    console.log("Fetching patient record for wallet:", walletAddress);
+
+    const provider = new ethers.BrowserProvider(window.ethereum);
+    const contract = new ethers.Contract(
+      contractAddress,
+      contractABI,
+      provider
+    );
+
+    const cid = await contract.getPatientRecord(walletAddress);
+    console.log("CID from smart contract:", cid);
+
+    if (!cid || cid === "") {
+      throw new Error("No patient record found for this wallet.");
+    }
+
+    const { data, contentType } = await pinata.gateways.private.get(cid);
+    console.log("IPFS response:", data, contentType);
+
+    console.log("Encrypted data package:", data);
+
+    return data.keys;
+  } catch (error) {
+    console.error("Error fetching or decrypting patient:", error);
+    throw error;
+  }
+}

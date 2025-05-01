@@ -1,5 +1,4 @@
 // utils/encryption.js
-import { ethers } from "ethers";
 import * as ethSigUtil from "@metamask/eth-sig-util";
 import { Buffer } from "buffer";
 
@@ -94,9 +93,9 @@ export async function prepareEncryptedData(patientData, authorizedWallets) {
   // 4. Encode AES key for each authorized user (TEMPORARY: just base64 encode)
   const encryptedKeys = {};
 
-  const aesKeyBase64 = btoa(
-    String.fromCharCode(...new Uint8Array(exportedAESKey))
-  );
+  // const aesKeyBase64 = btoa(
+  //   String.fromCharCode(...new Uint8Array(exportedAESKey))
+  // );
 
   for (const wallet of authorizedWallets) {
     encryptedKeys[wallet] = await encryptAESKeyForWallet(
@@ -115,6 +114,27 @@ export async function prepareEncryptedData(patientData, authorizedWallets) {
     data: encryptedBase64,
     iv: ivBase64,
     keys: encryptedKeys,
+    wallet_address: patientData.wallet_address,
+  };
+}
+
+export async function prepareEncryptedDataPatientUpdate(patientData, keys) {
+  const aesKey = await getCachedAESKey(patientData.wallet_address);
+  if (!aesKey) {
+    throw new Error("No AES key found for this wallet address");
+  }
+
+  const { encrypted, iv } = await encryptWithAES(aesKey, patientData);
+
+  const encryptedBase64 = btoa(
+    String.fromCharCode(...new Uint8Array(encrypted))
+  );
+  const ivBase64 = btoa(String.fromCharCode(...iv));
+
+  return {
+    data: encryptedBase64,
+    iv: ivBase64,
+    keys: keys,
     wallet_address: patientData.wallet_address,
   };
 }

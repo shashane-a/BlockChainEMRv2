@@ -1,15 +1,20 @@
-import { Link, redirect, useParams, useNavigate  } from "react-router-dom";
+import { useParams, useNavigate  } from "react-router-dom";
 import { useEffect, useState } from "react";
-import { fetchAndDecryptPatient } from "../utils/patients"; // assumes this uses CID + wallet to decrypt
+import { fetchAndDecryptPatient, getEncryptedKeys } from "../utils/patients"; // assumes this uses CID + wallet to decrypt
 import { ToastContainer, toast } from 'react-toastify';
 import { SquarePen, Plus, CircleAlert, X } from 'lucide-react';
 import ConfirmModal from "../components/ConfirmModal";
+import { ethers } from "ethers";
+import { prepareEncryptedDataPatientUpdate } from "../utils/encryption"; // assumes this uses CID + wallet to decrypt
+import { contractAddress, contractABI } from "../contracts/PatientRegistryContract";
+import  uploadJsonToIPFS  from "../utils/ipfs"; // assumes this uses CID + wallet to decrypt
 
 export default function PatientView() {
   const { walletAddress } = useParams();
   const [patient, setPatient] = useState(null);
   const [showEditNotes, setShowEditNotes] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [updatingPatient, setUpdatingPatient] = useState(false);
   const [pendingChanges, setPendingChanges] = useState({
     pending_notes: false,
     pending_appointments: false,
@@ -61,8 +66,55 @@ export default function PatientView() {
     toast.success("Note added successfully!");
   }
 
-  function handleUpdatePatient() {
-    setLoading(true);
+  async function handleUpdatePatient(event) {
+    event.preventDefault();
+    setUpdatingPatient(true);
+    // Logic to update patient data in ipfs and smart contract
+
+    console.log("Updating patient data:", patient);
+
+     try {
+      if (!window.ethereum) throw new Error("Please install MetaMask!");
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
+      const wallet_address = patient.wallet_address;
+      const adminAddress = await signer.getAddress();
+
+      const encryptedKeys = await getEncryptedKeys(walletAddress);
+      console.log("Encrypted keys:", encryptedKeys);
+      const encryptedDataPackage = await prepareEncryptedDataPatientUpdate(patient, encryptedKeys);
+      console.log("Encrypted package ready:", encryptedDataPackage);
+
+      const uploadResponse = await uploadJsonToIPFS(encryptedDataPackage, `${wallet_address}.json`);
+      console.log("Upload response:", uploadResponse);
+
+      if (!uploadResponse) {
+        console.error("Error uploading to IPFS");
+        toast.error("Error uploading to IPFS");
+        setLoading(false);
+        return;
+      }
+
+      const contract = new ethers.Contract(contractAddress, contractABI, signer);
+      console.log("wallet address:", wallet_address, 'ipf cid', uploadResponse.cid);
+      const tx = await contract.updatePatientRecord(wallet_address, uploadResponse.cid);
+      await tx.wait();
+
+     } catch (error) {
+      console.error("Error connecting to MetaMask:", error);
+      toast.error("Error connecting to MetaMask. Please try again.");
+     }
+
+    setUpdatingPatient(false);
+    //set all pending changes to false
+    setPendingChanges({
+      pending_notes: false,
+      pending_appointments: false,
+      pending_prescriptions: false,
+    });
+    toast.success("Patient data updated successfully!");
+    
+
   }
 
   if (!patient) {
@@ -168,8 +220,19 @@ export default function PatientView() {
         {Object.values(pendingChanges).some(value => value === true) && (
         <button
           className="self-start mb-4 py-2 px-8 rounded bg-[#3F72AF] border-2 border-[#] text-white font-semibold text-sm cursor-pointer" 
+          onClick={handleUpdatePatient}
         >
-          Update Patient
+          {updatingPatient ? (
+            <div className="flex items-center justify-center">
+              <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              Updating Patient...
+            </div>  )
+            : (<>
+              Update Patient
+            </>)} 
         </button>
         )}
       </div>
@@ -191,7 +254,7 @@ export default function PatientView() {
         </div>
         <div className="p-4 rounded shadow-sm bg-white flex flex-col flex-1 h-full">
           <div className="flex flex-row justify-between">
-            <h2 className="text-2xl flex items-center font-bold mb-4 text-[#112D4E]">{ pendingChanges.pending_notes ? <CircleAlert size={24} strokeWidth={3} className="mr-2 text-[#cc6f6f]" /> : null } Notes</h2>
+            <h2 className="text-2xl flex items-center font-bold mb-4 text-[#112D4E]">Notes</h2>
             <button 
               className="flex gap-2 self-start py-2 px-2 rounded bg-[#3F72AF] text-white font-semibold text-sm cursor-pointer" 
               onClick={() => setShowEditNotes(true)}
@@ -230,7 +293,16 @@ export default function PatientView() {
               <p className="text-gray-500">No notes available.</p>
             )}
           </div>
+          {pendingChanges.pending_notes ? (
+            <div className="flex items-center text-[#afafaf] mt-2">
+              <div className="flex items-center justify-center">
+                <CircleAlert size={20} strokeWidth={3} className="text-[#cc6f6f] mr-2" />
+              </div>
+              Changes are not saved yet!
+            </div>
+          ) : ( null )}
         </div>
+
         <div className="p-4 rounded shadow-sm bg-white flex-1">
           <div className="flex flex-row justify-between">
             <h2 className="text-2xl font-bold mb-4 text-[#112D4E]">Provider Acccess</h2>
