@@ -30,3 +30,15 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     def __str__(self):
         return self.wallet_address
+    
+class UserProfile(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
+    first_name = models.CharField(max_length=30, blank=True)
+    last_name = models.CharField(max_length=30, blank=True)
+    email = models.EmailField(blank=True)
+    phone_number = models.CharField(max_length=15, blank=True)
+    job_title = models.CharField(max_length=50, blank=True)
+    orgnisation_name = models.CharField(max_length=50, blank=True)
+
+    def __str__(self):
+        return f"{self.first_name} {self.last_name}"
