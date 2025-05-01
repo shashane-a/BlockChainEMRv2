@@ -2,14 +2,24 @@ import { Link, redirect, useParams, useNavigate  } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { fetchAndDecryptPatient } from "../utils/patients"; // assumes this uses CID + wallet to decrypt
 import { ToastContainer, toast } from 'react-toastify';
-import { SquarePen, Plus  } from 'lucide-react';
-
+import { SquarePen, Plus, CircleAlert, X } from 'lucide-react';
+import ConfirmModal from "../components/ConfirmModal";
 
 export default function PatientView() {
   const { walletAddress } = useParams();
   const [patient, setPatient] = useState(null);
   const [showEditNotes, setShowEditNotes] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [pendingChanges, setPendingChanges] = useState({
+    pending_notes: false,
+    pending_appointments: false,
+    pending_prescriptions: false,
+  });
+  const [patientNote, setPatientNote] = useState({
+    note_title: "",
+    note_description: "",
+  })
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
 
   const navigate = useNavigate()
 
@@ -19,6 +29,7 @@ export default function PatientView() {
         toast.info("Fetching patient record...");
         const data = await fetchAndDecryptPatient(walletAddress);
         setPatient(data);
+        console.log("Patient data:", data);
       } catch (error) {
         console.error("Failed to fetch patient record:", error);
         toast.error("Could not fetch patient data.");
@@ -27,6 +38,32 @@ export default function PatientView() {
 
     loadPatient();
   }, [walletAddress]);
+
+  function handleAddNote(e) {
+    e.preventDefault();
+    setLoading(true);
+    const note = {
+      title: patientNote.note_title,
+      description: patientNote.note_description,
+      date: new Date().toLocaleDateString(),
+    };
+
+    const updatedPatient = {
+      ...patient,
+      notes: [...(patient.notes || []), note],
+    };
+
+    setPatient(updatedPatient);
+    setLoading(false);
+    setShowEditNotes(false);
+    setPatientNote({ note_title: "", note_description: "" });
+    setPendingChanges({ ...pendingChanges, pending_notes: true });
+    toast.success("Note added successfully!");
+  }
+
+  function handleUpdatePatient() {
+    setLoading(true);
+  }
 
   if (!patient) {
     return (
@@ -46,6 +83,16 @@ export default function PatientView() {
     <div className="p-4 flex flex-col h-screen"> 
         
       <ToastContainer position="bottom-right" autoClose={5000} theme='colored' />
+      {(showConfirmModal && Object.values(pendingChanges).some(value => value === true)) && (
+        <ConfirmModal
+          message="Are you sure you want to leave this page? You have unsaved changes."
+          onConfirm={() => {
+            setShowConfirmModal(false);
+            navigate("/patients");  
+          }}
+          onCancel={() => setShowConfirmModal(false)}
+        />
+      )}
       {showEditNotes && (
           <div className="fixed inset-0 bg-black/30 bg-opacity-50 flex items-center justify-center z-50" 
                onClick={() => setShowEditNotes(false)}>
@@ -63,23 +110,24 @@ export default function PatientView() {
                 </button>
               </div>
               
-              <form  className="rounded space-y-6">
+              <form onSubmit={handleAddNote} className="flex flex-col">
 
                 <div>
                   {/* <h3 className="text-base font-semibold text-[#112D4E] mb-2">Title</h3> */}
                   <input 
                     name="note_title" 
                     placeholder="Title" 
-                    // value={patientForm.wallet_address} 
-                    // onChange={handleChange} 
+                    value ={patientNote.note_title}
+                    onChange={(e) => setPatientNote({ ...patientNote, note_title: e.target.value })}
                     className="my-5 block w-full p-2 border border-gray-300 rounded" 
                     required 
                   />
                   <textarea  
                     name="note_description" 
                     placeholder="Description" 
-                    // value={patientForm.wallet_address} 
-                    // onChange={handleChange} 
+                    value={patientNote.note_description}
+                    onChange={(e) => setPatientNote({ ...patientNote, note_description: e.target.value })}
+                    maxLength={500}
                     className="my-5 block w-full p-2 border border-gray-300 rounded" 
                     rows={8}
                     required 
@@ -100,13 +148,32 @@ export default function PatientView() {
             </div>
           </div>
         )}
-      <button 
-        onClick={() => window.history.back()}
-        className="self-start mb-4 py-2 px-4 rounded bg-[#3F72AF] text-white font-semibold text-sm cursor-pointer" 
-      >
-        Back
-      </button>
-      <div className="flex flex-row gap-5 flex-1 overflow-auto">
+      <div className="flex flex-row justify-between items-center ">
+        <button 
+          onClick={() => {
+            const hasPendingChanges = Object.values(pendingChanges).some(v => v === true);
+            () => setShowConfirmModal(true);
+            if (!hasPendingChanges) {
+              navigate("/patients");
+            } else {
+              setShowConfirmModal(true);
+            }
+          }
+          }
+          className="self-start mb-4 py-2 px-4 rounded bg-[#3F72AF] text-white font-semibold text-sm cursor-pointer" 
+        >
+          Back
+        </button>
+        
+        {Object.values(pendingChanges).some(value => value === true) && (
+        <button
+          className="self-start mb-4 py-2 px-8 rounded bg-[#3F72AF] border-2 border-[#] text-white font-semibold text-sm cursor-pointer" 
+        >
+          Update Patient
+        </button>
+        )}
+      </div>
+      <div className="flex flex-row gap-5 flex-1 h-1/2">
         <div className="p-4 rounded shadow-md bg-white flex-1">
           <h2 className="text-2xl font-bold mb-4 text-[#112D4E]">Patient Details</h2>
           <p className="text-[#112D4E]"><strong>Wallet Address:</strong> {patient.wallet_address}</p>
@@ -122,9 +189,9 @@ export default function PatientView() {
           <p className="text-[#112D4E]">{patient?.address?.city}, {patient?.address?.county}, {patient?.address?.postcode}</p>
           <p className="text-[#112D4E]">{patient?.address?.country}</p>
         </div>
-        <div className="p-4 rounded shadow-sm bg-white flex-1">
+        <div className="p-4 rounded shadow-sm bg-white flex flex-col flex-1 h-full">
           <div className="flex flex-row justify-between">
-            <h2 className="text-2xl font-bold mb-4 text-[#112D4E]">Notes</h2>
+            <h2 className="text-2xl flex items-center font-bold mb-4 text-[#112D4E]">{ pendingChanges.pending_notes ? <CircleAlert size={24} strokeWidth={3} className="mr-2 text-[#cc6f6f]" /> : null } Notes</h2>
             <button 
               className="flex gap-2 self-start py-2 px-2 rounded bg-[#3F72AF] text-white font-semibold text-sm cursor-pointer" 
               onClick={() => setShowEditNotes(true)}
@@ -132,6 +199,36 @@ export default function PatientView() {
               <Plus size={20} strokeWidth={3} />
               Add 
             </button>
+          </div>
+
+          <div className="flex-1 overflow-y-auto">
+            {patient.notes && patient.notes.length > 0 ? (
+              patient.notes.map((note, index) => (
+                <div key={index} className="border-b border-gray-300 py-2 flex justify-between items-center">
+                  <div>
+                    <h3 className="text-lg font-semibold text-[#112D4E]">{note.title}</h3>
+                    <p className="text-[#112D4E]">{note.description}</p>
+                    <p className="text-sm text-gray-500">{note.date}</p>
+                  </div>
+                  <div className="relative justify-between items-center mt-2">
+                    <button 
+                      className="justify-self-end text-[#3F72AF] hover:text-[#112D4E] font-semibold text-sm"
+                      onClick={() => {
+                        setPatient((prev) => ({
+                          ...prev,
+                          notes: prev.notes.filter((_, i) => i !== index),
+                        }));
+                        setPendingChanges({ ...pendingChanges, pending_notes: true });
+                      }}
+                    >
+                      <X size={20} strokeWidth={3} className="text-white bg-[#cc6f6f] rounded"  />
+                    </button>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <p className="text-gray-500">No notes available.</p>
+            )}
           </div>
         </div>
         <div className="p-4 rounded shadow-sm bg-white flex-1">
