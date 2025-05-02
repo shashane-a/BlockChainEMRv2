@@ -2,7 +2,7 @@ import { useParams, useNavigate  } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { fetchAndDecryptPatient, getEncryptedKeys } from "../utils/patients"; // assumes this uses CID + wallet to decrypt
 import { ToastContainer, toast } from 'react-toastify';
-import { SquarePen, Plus, CircleAlert, X } from 'lucide-react';
+import { SquarePen, Plus, CircleAlert, X, Calendar } from 'lucide-react';
 import ConfirmModal from "../components/ConfirmModal";
 import { ethers } from "ethers";
 import { prepareEncryptedDataPatientUpdate } from "../utils/encryption"; // assumes this uses CID + wallet to decrypt
@@ -273,7 +273,7 @@ export default function PatientView() {
                     <p className="text-[#112D4E]">{note.description}</p>
                     <p className="text-sm text-gray-500">{note.date}</p>
                   </div>
-                  <div className="relative justify-between items-center mt-2">
+                  <div className="relative justify-between items-center mt-2 mr-2">
                     <button 
                       className="justify-self-end text-[#3F72AF] hover:text-[#112D4E] font-semibold text-sm"
                       onClick={() => {
@@ -320,12 +320,21 @@ export default function PatientView() {
       <div className="p-4 my-5 rounded shadow-sm bg-white flex-1">
           <div className="flex flex-row justify-between">
             <h2 className="text-2xl font-bold mb-4 text-[#112D4E]">Appointments</h2>
-            <button 
-              className="flex gap-2 self-start py-2 px-2 rounded bg-[#3F72AF] text-white font-semibold text-sm cursor-pointer" 
-            >
-              <SquarePen size={20}/>
-              Edit 
-            </button>
+            <div className="flex gap-2">
+              <button 
+                className="flex gap-2 self-start py-2 px-2 rounded bg-[#3F72AF] text-white font-semibold text-sm cursor-pointer" 
+              >
+                <SquarePen size={20}/>
+                Add 
+              </button>
+              <button 
+                className="flex gap-2 self-start py-2 px-2 rounded bg-[#3F72AF] text-white font-semibold text-sm cursor-pointer" 
+                onClick={() => navigate("/appointments")}
+              >
+                <Calendar size={20}/>
+                View Appointments 
+              </button>
+            </div>
           </div>
         </div>
         <div className="p-4 my-5 rounded shadow-sm bg-white flex-1">

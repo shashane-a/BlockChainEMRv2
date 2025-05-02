@@ -250,40 +250,41 @@ export default function Access() {
             Manage Access to your medical record
           </h2>
         )}
-        {auth.role === "admin" ? (
-          <h3 className="text-lg font-bold mt-2 text-[#112D4E]/85">
-            Grant Patient access to a Healthcare Provider
-          </h3>
-        ) : (
-          <h3 className="text-lg font-bold mt-2 text-[#112D4E]/85">
-            Grant access to a Healthcare Provider
-          </h3>
-        )}
-        {auth.role === "admin" ? (
-          <p className="text-gray-600 text-sm mb-4">Please enter the wallet address of the healthcare provider and patient</p>
-        ) : (
-          <p className="text-gray-600 text-sm mb-4">Please enter the wallet address of the healthcare provider</p>
-        )}
-        
-        {auth.role === "admin" && (
+        <div className="bg-white p-4 rounded shadow-md mb-8">
+          {auth.role === "admin" ? (
+            <h3 className="text-lg font-bold mt-2 text-[#112D4E]/85">
+              Grant Patient access to a Healthcare Provider
+            </h3>
+          ) : (
+            <h3 className="text-lg font-bold mt-2 text-[#112D4E]/85">
+              Grant access to a Healthcare Provider
+            </h3>
+          )}
+          {auth.role === "admin" ? (
+            <p className="text-gray-600 text-sm mb-4">Please enter the wallet address of the healthcare provider and patient</p>
+          ) : (
+            <p className="text-gray-600 text-sm mb-4">Please enter the wallet address of the healthcare provider</p>
+          )}
+          
+          {auth.role === "admin" && (
+            <input 
+              name="patient_acc_wallet_address" 
+              placeholder="Patient Wallet Address" 
+              value={patientAccessAddress} 
+              onChange={ (e) => setPatientAccessAddress(e.target.value)} 
+              className="block p-2 border border-gray-300 bg-white rounded w-3/4 mb-4" 
+              required 
+            />
+          )}
           <input 
-            name="patient_acc_wallet_address" 
-            placeholder="Patient Wallet Address" 
-            value={patientAccessAddress} 
-            onChange={ (e) => setPatientAccessAddress(e.target.value)} 
-            className="block p-2 border border-gray-300 bg-white rounded w-3/4 mb-4" 
+            name="provider_acc_wallet_address" 
+            placeholder="Provider Wallet Address" 
+            value={providerAccessAddress} 
+            onChange={ (e) => setProviderAccessAddress(e.target.value)} 
+            className="block p-2 border border-gray-300 bg-white rounded w-3/4" 
             required 
           />
-        )}
-        <input 
-          name="provider_acc_wallet_address" 
-          placeholder="Provider Wallet Address" 
-          value={providerAccessAddress} 
-          onChange={ (e) => setProviderAccessAddress(e.target.value)} 
-          className="block p-2 border border-gray-300 bg-white rounded w-3/4" 
-          required 
-        />
-        {/* {auth.role === "admin" ? ( */}
+          {/* {auth.role === "admin" ? ( */}
           <button 
             className="flex self-start py-2 px-4 mt-3 mb-8 rounded bg-[#3F72AF] text-white font-semibold text-sm cursor-pointer" 
             disabled={accessLoading}
@@ -303,8 +304,11 @@ export default function Access() {
               </>
             )}
           </button>
+        </div>
 
           
+        <div className="bg-white p-4 rounded shadow-md mb-8">
+
         {auth.role === "admin" ? (
           <h3 className="text-lg font-bold mt-2 text-[#112D4E]/85">
             Revoke Patient access to a Healthcare Provider
@@ -353,6 +357,7 @@ export default function Access() {
               </>
             )}
           </button>
+        </div>
    
         {auth.role === "patient" && (
           <div>

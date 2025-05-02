@@ -1,0 +1,31 @@
+/* Applies to today in all views */
+.fc-day-today {
+  background-color: #dbe2ef !important; /* Light blue */
+  border: 2px solid #78cdff; /* Cyan border */
+}
+
+/* Optional: make the current time header cell bold */
+.fc-col-header-cell.fc-day-today {
+  font-weight: bold;
+  background-color: #dbe2ef !important;
+}
+
+.fc-toolbar-title {
+  font-size: 1.4em !important;
+  font-weight: bold !important;
+  color: #112d4e !important; /* Darker text color for better contrast */
+}
+
+.fc-button-primary {
+  background-color: #3f72af !important; /* Dark blue */
+  border: none !important; /* Remove border */
+}
+
+.fc-button-primary:not(:disabled).fc-button-active {
+  background-color: #112d4e !important; /* Darker blue for active button */
+  border-color: #3f72af !important; /* Border color to match the button */
+}
+
+.fc-event {
+  cursor: pointer;
+}
