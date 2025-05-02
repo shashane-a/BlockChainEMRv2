@@ -1,13 +1,16 @@
 import { useParams, useNavigate  } from "react-router-dom";
 import { useEffect, useState } from "react";
-import { fetchAndDecryptPatient, getEncryptedKeys } from "../utils/patients"; // assumes this uses CID + wallet to decrypt
+import { fetchAndDecryptPatient, getEncryptedKeys } from "../utils/patients"; 
 import { ToastContainer, toast } from 'react-toastify';
 import { SquarePen, Plus, CircleAlert, X, Calendar } from 'lucide-react';
 import ConfirmModal from "../components/ConfirmModal";
 import { ethers } from "ethers";
-import { prepareEncryptedDataPatientUpdate } from "../utils/encryption"; // assumes this uses CID + wallet to decrypt
+import { prepareEncryptedDataPatientUpdate } from "../utils/encryption"; 
 import { contractAddress, contractABI } from "../contracts/PatientRegistryContract";
-import  uploadJsonToIPFS  from "../utils/ipfs"; // assumes this uses CID + wallet to decrypt
+import  uploadJsonToIPFS  from "../utils/ipfs"; 
+import EditNoteModal from "../components/EditNoteModal";
+import AddAppointment from "../components/AddAppointment"; 
+import { useAuth } from "../context/AuthContext.jsx"; 
 
 export default function PatientView() {
   const { walletAddress } = useParams();
@@ -15,6 +18,7 @@ export default function PatientView() {
   const [showEditNotes, setShowEditNotes] = useState(false);
   const [loading, setLoading] = useState(false);
   const [updatingPatient, setUpdatingPatient] = useState(false);
+  const { auth } = useAuth();
   const [pendingChanges, setPendingChanges] = useState({
     pending_notes: false,
     pending_appointments: false,
@@ -24,6 +28,18 @@ export default function PatientView() {
     note_title: "",
     note_description: "",
   })
+  const [showAddAppointment, setShowAddAppointment] = useState(false);
+  const [appointment, setAppointment] = useState({
+    appointment_title: "",
+    appointment_description: "",
+    appointment_date: "",
+    appointment_time: "",
+    appointment_duration: "",
+    appointment_location: "",
+    appointment_provider: auth?.wallet_address,
+  })
+
+
   const [showConfirmModal, setShowConfirmModal] = useState(false);
 
   const navigate = useNavigate()
@@ -64,6 +80,40 @@ export default function PatientView() {
     setPatientNote({ note_title: "", note_description: "" });
     setPendingChanges({ ...pendingChanges, pending_notes: true });
     toast.success("Note added successfully!");
+  }
+
+  function handleAddAppointment(e) {
+    e.preventDefault();
+    setLoading(true);
+    const newAppointment = {
+      title: appointment.appointment_title,
+      description: appointment.appointment_description,
+      date: appointment.appointment_date,
+      time: appointment.appointment_time,
+      duration: appointment.appointment_duration,
+      location: appointment.appointment_location,
+      provider: appointment.appointment_provider,
+    };
+
+    const updatedPatient = {
+      ...patient,
+      appointments: [...(patient.appointments || []), newAppointment],
+    };
+
+    setPatient(updatedPatient);
+    setLoading(false);
+    setShowAddAppointment(false);
+    setAppointment({
+      appointment_title: "",
+      appointment_description: "",
+      appointment_date: "",
+      appointment_time: "",
+      appointment_duration: "",
+      appointment_location: "",
+      appointment_provider: auth?.wallet_address,
+    });
+    setPendingChanges({ ...pendingChanges, pending_appointments: true });
+    toast.success("Appointment added successfully!");
   }
 
   async function handleUpdatePatient(event) {
@@ -146,60 +196,24 @@ export default function PatientView() {
         />
       )}
       {showEditNotes && (
-          <div className="fixed inset-0 bg-black/30 bg-opacity-50 flex items-center justify-center z-50" 
-               onClick={() => setShowEditNotes(false)}>
-            {/* Modal Content - Stop propagation to prevent closing when clicking inside the modal */}
-            <div className="bg-white p-6 rounded-lg shadow-lg w-2/5" onClick={(e) => e.stopPropagation()}>
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-bold text-[#112D4E]">Add New Note</h2>
-                <button 
-                  onClick={() => setShowEditNotes(false)}
-                  className="text-gray-500 hover:text-gray-700"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-              
-              <form onSubmit={handleAddNote} className="flex flex-col">
+        <EditNoteModal
+          patientNote={patientNote}
+          setPatientNote={setPatientNote}
+          loading={loading}
+          setShowEditNotes={setShowEditNotes}
+          handleAddNote={handleAddNote}
+        />
+      )}
+      {showAddAppointment && ( 
+        <AddAppointment
+          appointment={appointment}
+          setAppointment={setAppointment}
+          loading={loading}
+          setShowAddAppointment={setShowAddAppointment}
+          handleAddAppointment={handleAddAppointment}
+        />
+      )}
 
-                <div>
-                  {/* <h3 className="text-base font-semibold text-[#112D4E] mb-2">Title</h3> */}
-                  <input 
-                    name="note_title" 
-                    placeholder="Title" 
-                    value ={patientNote.note_title}
-                    onChange={(e) => setPatientNote({ ...patientNote, note_title: e.target.value })}
-                    className="my-5 block w-full p-2 border border-gray-300 rounded" 
-                    required 
-                  />
-                  <textarea  
-                    name="note_description" 
-                    placeholder="Description" 
-                    value={patientNote.note_description}
-                    onChange={(e) => setPatientNote({ ...patientNote, note_description: e.target.value })}
-                    maxLength={500}
-                    className="my-5 block w-full p-2 border border-gray-300 rounded" 
-                    rows={8}
-                    required 
-                  />
-                </div>
-
-                {/* Buttons */}
-                <div className="flex justify-end pt-4">
-                  <button onClick={() => setShowEditNotes(false)} type="button" className="mr-2 py-2 px-4 rounded bg-gray-300 text-gray-800 font-semibold">
-                    Cancel
-                  </button>
-                  <button type="submit" className="py-2 px-4 rounded bg-[#3F72AF] text-white font-semibold" disabled={loading}>
-                    {loading ? "Adding..." : "Add Note"}
-                  </button>
-                </div>
-                </form>
-
-            </div>
-          </div>
-        )}
       <div className="flex flex-row justify-between items-center ">
         <button 
           onClick={() => {
@@ -323,7 +337,8 @@ export default function PatientView() {
             <div className="flex gap-2">
               <button 
                 className="flex gap-2 self-start py-2 px-2 rounded bg-[#3F72AF] text-white font-semibold text-sm cursor-pointer" 
-              >
+                onClick={() => setShowAddAppointment(true)}
+                >
                 <SquarePen size={20}/>
                 Add 
               </button>
@@ -332,9 +347,38 @@ export default function PatientView() {
                 onClick={() => navigate("/appointments")}
               >
                 <Calendar size={20}/>
-                View Appointments 
+                View All 
               </button>
             </div>
+          </div>
+          <div className="flex-1 overflow-y-auto">
+            {patient.appointments && patient.appointments.length > 0 ? (
+              patient.appointments.map((appointment, index) => (
+                <div key={index} className="border-b border-gray-300 py-2 flex justify-between items-center">
+                  <div>
+                    <h3 className="text-lg font-semibold text-[#112D4E]">{appointment.title}</h3>
+                    <p className="text-[#112D4E]">{appointment.description}</p>
+                    <p className="text-sm text-gray-500">{appointment.date} {appointment.time}</p>
+                  </div>
+                  <div className="relative justify-between items-center mt-2 mr-2">
+                    <button 
+                      className="justify-self-end text-[#3F72AF] hover:text-[#112D4E] font-semibold text-sm"
+                      onClick={() => {
+                        setPatient((prev) => ({
+                          ...prev,
+                          appointments: prev.appointments.filter((_, i) => i !== index),
+                        }));
+                        setPendingChanges({ ...pendingChanges, pending_appointments: true });
+                      }}
+                    >
+                      <X size={20} strokeWidth={3} className="text-white bg-[#cc6f6f] rounded"  />
+                    </button>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <p className="text-gray-500">No appointments available.</p>
+            )}
           </div>
         </div>
         <div className="p-4 my-5 rounded shadow-sm bg-white flex-1">
