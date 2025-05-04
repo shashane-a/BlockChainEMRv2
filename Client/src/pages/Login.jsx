@@ -39,6 +39,7 @@ export default function Login() {
       });
   
       const signature = await signer.signMessage(nonceData.nonce);
+      console.log('Signature:', signature);
   
       const { data: loginData } = await axios.post('http://localhost:8000/api/auth/login/', {
         address: userAddress,
@@ -290,7 +291,7 @@ async function registerRoleOnChain(selectedRole) {
           </div>
           
           {address && (
-            <div className="mt-6 p-4 border rounded-md bg-gray-50">
+            <div className="mt-6 p-4 shadow-md rounded-md bg-gray-50">
               <p className="text-sm text-gray-700">
                 <span className="font-medium">Connected:</span> 
                 <span className="font-mono ml-2 text-xs break-all">{address}</span>

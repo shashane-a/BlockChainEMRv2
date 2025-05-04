@@ -19,6 +19,7 @@
     "@tailwindcss/vite": "^4.1.4",
     "axios": "^1.8.4",
     "buffer": "^6.0.3",
+    "dotenv": "^16.5.0",
     "ethereumjs-util": "^7.1.5",
     "ethers": "^6.13.5",
     "events": "^3.3.0",

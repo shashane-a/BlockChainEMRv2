@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect } from "react";
 import { jwtDecode } from "jwt-decode";
+import { Navigate } from "react-router-dom";
 
 // Create the context
 const AuthContext = createContext();
@@ -36,6 +37,7 @@ export function AuthProvider({ children }) {
     setAuth({ accessToken: null, role: null, walletid: null });
     localStorage.removeItem("accessToken");
     sessionStorage.clear(); // Clear session storage on logout
+    Navigate("/login"); // Redirect to login page
   };
 
   return (
