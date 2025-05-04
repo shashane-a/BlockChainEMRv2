@@ -1,6 +1,46 @@
-export const contractAddress = "0xA5fB446B1fd6A682f9519e59F80cA478164eeC8a";
+export const contractAddress = "0x64f9e2DbEaC3361B7042CeC9Ade544AC7aec924f";
 
 export const contractABI = [
+  {
+    inputs: [
+      {
+        internalType: "address",
+        name: "patient",
+        type: "address",
+      },
+    ],
+    name: "adminAddPatient",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "address",
+        name: "user",
+        type: "address",
+      },
+    ],
+    name: "assignAdmin",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "registerAsPatient",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "registerAsProvider",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
   {
     inputs: [],
     stateMutability: "nonpayable",
@@ -47,27 +87,33 @@ export const contractABI = [
   {
     inputs: [
       {
+        internalType: "uint256",
+        name: "",
+        type: "uint256",
+      },
+    ],
+    name: "adminList",
+    outputs: [
+      {
         internalType: "address",
-        name: "patient",
+        name: "",
         type: "address",
       },
     ],
-    name: "adminAddPatient",
-    outputs: [],
-    stateMutability: "nonpayable",
+    stateMutability: "view",
     type: "function",
   },
   {
-    inputs: [
+    inputs: [],
+    name: "getAllAdmins",
+    outputs: [
       {
-        internalType: "address",
-        name: "user",
-        type: "address",
+        internalType: "address[]",
+        name: "",
+        type: "address[]",
       },
     ],
-    name: "assignAdmin",
-    outputs: [],
-    stateMutability: "nonpayable",
+    stateMutability: "view",
     type: "function",
   },
   {
@@ -100,20 +146,6 @@ export const contractABI = [
       },
     ],
     stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [],
-    name: "registerAsPatient",
-    outputs: [],
-    stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
-    inputs: [],
-    name: "registerAsProvider",
-    outputs: [],
-    stateMutability: "nonpayable",
     type: "function",
   },
   {

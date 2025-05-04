@@ -9,17 +9,39 @@ import { jwtDecode } from "jwt-decode";// import jwt-decode
 import { useNavigate } from "react-router-dom";
 import { usePatientData } from '../context/PatientDataContext.jsx';
 import { fetchPatientData, fetchPatientRecord, fetchAccessiblePatients, fetchAndDecryptPatient} from "../utils/patients";
+import { addPatientRecord } from '../utils/addPatienRecord.js';
+import AddPatientModal from '../components/AddPatient.jsx';
 
 export default function Login() {
   const [address, setAddress] = useState('');
   const [loading, setLoading] = useState(false);
+  const [addPatientLoading, setAddPatientLoading] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [showRolePicker, setShowRolePicker] = useState(false);
   const [selectedRole, setSelectedRole] = useState('');
   const [userRole, setUserRole] = useState('');
   const { auth, setAuth } = useAuth();
   const { patients, setPatients } = usePatientData();
+  const [showAddPatientModal, setShowAddPatientModal] = useState(false);
   const navigate = useNavigate();
+
+  const [patientForm, setPatientForm] = useState({
+    first_name: "",
+    last_name: "",
+    date_of_birth: "",
+    gender: "",
+    phoneNumber: "",
+    email: "",
+    address: {
+      house_number: "",
+      street: "",
+      city: "",
+      county: "",
+      postcode: "",
+      country: "",
+    },
+    wallet_address: "",
+  });
 
   const loginWithWallet = async () => {
     setLoading(true);
@@ -163,6 +185,49 @@ export default function Login() {
       return null;
     }
   }
+
+  async function handleRegisterPatient(event) {
+    event.preventDefault();
+    setLoading(true);
+  
+    try {
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
+  
+      const result = await addPatientRecord(patientForm, signer, toast, false);
+  
+      if (result.success) {
+        setShowAddPatientModal(false);
+        setPatientForm({
+          first_name: "",
+          last_name: "",
+          date_of_birth: "",
+          gender: "",
+          phoneNumber: "",
+          email: "",
+          address: {
+            house_number: "",
+            street: "",
+            city: "",
+            county: "",
+            postcode: "",
+            country: "",
+          },
+          wallet_address: "",
+        });
+        // await loadPatients(); // Refresh list
+      }
+  
+    } finally {
+      const encryptedPatient = await fetchAndDecryptPatient(auth.walletid);
+      console.log(encryptedPatient);
+      setPatients([encryptedPatient]);
+      console.log("Decrypted patient data:", encryptedPatient);
+      setLoading(false);
+      navigate('/dashboard');
+
+    }
+  }
   
 
   const handleRoleSubmit = async () => {
@@ -194,14 +259,21 @@ export default function Login() {
         role: decoded.role,
         walletid: decoded.wallet_address,
       });
+      
 
       setIsLoggedIn(true);
       setUserRole(selectedRole);
       setShowRolePicker(false);
 
-      toast.success(`Role set to ${selectedRole}`);
-      setLoading(false);
-      navigate('/dashboard');
+      console.log('User role selected:', selectedRole);
+      //if patient, create a new record
+      if (selectedRole === 'patient') {
+        setShowAddPatientModal(true);
+      }
+
+      // toast.success(`Role set to ${selectedRole}`);
+      // setLoading(false);
+      // navigate('/dashboard');
 
     } catch (err) {
       console.log(err);
@@ -341,6 +413,18 @@ async function registerRoleOnChain(selectedRole) {
           )}
         </div>
       </div>
+      {showAddPatientModal && (
+        <AddPatientModal
+          show={showAddPatientModal}
+          onClose={() => setShowAddPatientModal(false)}
+          loading={addPatientLoading}
+          patientForm={patientForm}
+          setPatientForm={setPatientForm}
+          handleAddPatient={handleRegisterPatient}
+          isAdminAddPatient={false} // Set to false for non-admins
+          walletid={auth.walletid} // Pass the wallet ID of the logged-in user
+        />
+      )}
     </div>
   );
 }

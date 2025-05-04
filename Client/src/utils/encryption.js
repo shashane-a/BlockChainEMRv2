@@ -74,6 +74,7 @@ export async function decryptWithAES(key, encryptedData, iv) {
     encryptedData
   );
 
+  // Convert decrypted data to string and parse as JSON
   const decodedData = new TextDecoder().decode(decryptedData);
   return JSON.parse(decodedData);
 }

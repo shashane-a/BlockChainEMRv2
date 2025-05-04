@@ -70,6 +70,10 @@ export async function fetchPatientRecord(wallet_address) {
   const contract = new ethers.Contract(contractAddress, contractABI, provider);
   console.log("Fetching patient record for wallet:", wallet_address);
   const cid = await contract.getPatientRecord(wallet_address);
+  if (!cid || cid === "") {
+    console.error("No patient record found for this wallet.");
+    return null; // No patient record found for this wallet
+  }
 
   console.log("CID from contract:", cid);
   const { data, contentType } = await pinata.gateways.private.get(cid);
