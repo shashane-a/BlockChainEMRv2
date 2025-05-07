@@ -7,6 +7,7 @@ from eth_account.messages import encode_defunct
 from eth_account import Account
 from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.authentication import JWTAuthentication
+from django.core.exceptions import ObjectDoesNotExist
 import random
 
 class GetNonceView(APIView):
@@ -106,19 +107,39 @@ class SetUserProfileView(APIView):
             defaults=user_profile_data
         )
 
+        if created:
+            print("Profile created:", profile)
         return Response({
             "success": True,
             "message": "Profile created" if created else "Profile updated"
         })
     
+
 class GetUserProfileView(APIView):
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
+
     def get(self, request):
         address = request.GET.get("address")
-        user = User.objects.get(wallet_address=address)
-        user_profile = user.profile
+        print("Address:", address)
+
+        try:
+            user = User.objects.get(wallet_address=address)
+        except User.DoesNotExist:
+            return Response({"error": "User not found"}, status=404)
+
+        try:
+            user_profile = user.profile  # OneToOneField access
+        except ObjectDoesNotExist:
+            return Response({
+                "message": "User profile not found",
+                "data": {
+                    "profileExists": False,
+                }              
+                }, status=200)
+
         data = {
+            "profileExists": True,
             "title": user_profile.title,
             "first_name": user_profile.first_name,
             "last_name": user_profile.last_name,
@@ -126,4 +147,24 @@ class GetUserProfileView(APIView):
             "job_title": user_profile.job_title,
             "orgnisation_name": user_profile.orgnisation_name,
         }
-        return Response(data)
+
+        return Response(data, status=200)
+
+class GetAllProfilesView(APIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user_profiles = UserProfile.objects.all()
+        data = []
+        for profile in user_profiles:
+            data.append({
+                "wallet_address": profile.user.wallet_address,
+                "title": profile.title,
+                "first_name": profile.first_name,
+                "last_name": profile.last_name,
+                "email": profile.email,
+                "job_title": profile.job_title,
+                "orgnisation_name": profile.orgnisation_name,
+            })
+        return Response(data, status=200)

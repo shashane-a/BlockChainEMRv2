@@ -2,61 +2,62 @@ import { usePatientData } from "../context/PatientDataContext";
 import { useAuth } from "../context/AuthContext.jsx";
 import { Link, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
+import axios from "axios";
+import AddProviderProfile from "../components/AddProviderProfile.jsx";
 
 export default function Dashboard() {
   const { auth } = useAuth();
   const { patients, setPatients } = usePatientData();
-  const [ providers, setProviders ] = useState([
-    {
-      name: "Dr. John Doe",
-      job_title: "Radiologist",
-      organisation: "MediCare Clinic",
-      added_date: "28/04/2025 10:40",
-    },
-    {
-      name: "Dr. Jane Smith",
-      job_title: "Cardiologist",
-      organisation: "HeartCare Clinic",
-      added_date: "28/04/2025 10:42",
-    },
-    {
-      name: "Emily Johnson",
-      job_title: "Radiology Technician",
-      organisation: "Radilogy Clinic",
-      added_date: "28/04/2025 10:45",
-    },
-  ])
+  const [showAddProviderProfile, setShowAddProviderProfile] = useState(false);
+  const [ providers, setProviders ] = useState([])
+  const [events, setEvents] = useState([]);
+  const [providerProfile, setProviderProfile] = useState({});
+  
 
-  const [events, setEvents] = useState([
-    {
-      type: "User Registerd",
-      date: "28/04/2025 10:40",
-      description: "User registered with wallet id 0x7A6b2ce68400FC2b1ab66d60ADE56333a11A6c40",
-    },
-    {
-      type: "User Registerd",
-      date: "28/04/2025 10:45",
-      description: "User registered with wallet id 0xE1e9ADde214305fcBa2eb37daF74410FF32055B5",
-    },
-    {
-      type: "Patient Added",
-      date: "28/04/2025 10:51",
-      description: "Patient added with wallet id 0xDAD3e36F7E135c67123F4DF53e90472A40cEB01c",
-    },
-    {
-      type: "Patient Added",
-      date: "28/04/2025 10:56",
-      description: "User registered with wallet id 0xa3C4B27128670e8DF6C39793941DBA7c97191E73",
-    },
-    {
-      type: "User Registerd",
-      date: "28/04/2025 11:13",
-      description: "0xb295806b76fEc3057F9fBeE9474E25468A5C94fF",
-    },
-  ]);
+useEffect(() => {
+  //open provider profile modal if user is a provider/admin and has no profile
+  const fetchProfile = async () => {
+
+    if (auth.role === "provider" || auth.role === "admin") {
+      const response = await getProviderProfile();
+      const profileExists = response.data.profileExists;
+      if (!profileExists) {
+        setShowAddProviderProfile(true);
+      }else {
+        setProviderProfile(response.data);
+      }
+    }
+  };
+
+  fetchProfile();
+  console.log("Provider profile:", providerProfile);
+  //fetch profile data from the server
+
+}, [auth.role])
+
+  async function getProviderProfile() {
+    const response = await axios.get("http://localhost:8000/api/auth/get_user_profile/?address=" + `${auth.walletid}`,
+      {
+      headers: { Authorization: `Bearer ${auth.accessToken}` }
+    });
+    console.log("Provider profile response:", response.data);
+    return response;
+  }
+
 
   return (
+   
     <div className="p-4 flex flex-col gap-4 h-screen">
+      {showAddProviderProfile && (
+       <AddProviderProfile 
+        show={showAddProviderProfile}
+        onClose={
+          () => {
+            setShowAddProviderProfile(false)}
+
+        }
+      />
+      )}
       <h2 className="text-2xl font-bold text-gray-800">Dashboard</h2>
 
       { auth.role === "admin" && (
@@ -65,10 +66,10 @@ export default function Dashboard() {
         <div className="flex flex-col gap-4 flex-1 overflow-hidden">
 
           <div className="p-4 rounded shadow-md bg-white flex-shrink-0">
-            <h2 className="text-2xl font-bold mb-2 text-[#112D4E]">Welcome John Smith</h2>
-            <p className="text-gray-800 text-xl font-semibold">Administrator</p>
-            <p className="text-gray-500">Radiology Lead</p>
-            <p className="text-gray-500">MediCare Clinic</p>
+            <h2 className="text-2xl font-bold mb-2 text-[#112D4E]">Welcome {`${providerProfile.title} ${providerProfile.first_name} ${providerProfile.last_name}`}</h2>
+            <p className="text-gray-800 text-xl font-semibold">{providerProfile.job_title}</p>
+            <p className="text-gray-500">Administrator</p>
+            <p className="text-gray-500">{providerProfile.orgnisation_name}</p>
           </div>
         
 
