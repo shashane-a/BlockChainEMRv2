@@ -33,10 +33,10 @@ class User(AbstractBaseUser, PermissionsMixin):
     
 class UserProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
+    title = models.CharField(max_length=100, blank=True)
     first_name = models.CharField(max_length=30, blank=True)
     last_name = models.CharField(max_length=30, blank=True)
     email = models.EmailField(blank=True)
-    phone_number = models.CharField(max_length=15, blank=True)
     job_title = models.CharField(max_length=50, blank=True)
     orgnisation_name = models.CharField(max_length=50, blank=True)
 

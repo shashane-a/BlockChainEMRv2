@@ -1,7 +1,7 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from django.core.cache import cache
-from .models import User
+from .models import User, UserProfile
 from rest_framework_simplejwt.tokens import RefreshToken
 from eth_account.messages import encode_defunct
 from eth_account import Account
@@ -20,7 +20,7 @@ class WalletLoginView(APIView):
     def post(self, request):
         address = request.data.get("address")
         signature = request.data.get("signature")
-        role = request.data.get("role")  # This may be None
+        role = request.data.get("role")  
 
         nonce = cache.get(address)
         if not nonce:
@@ -36,7 +36,6 @@ class WalletLoginView(APIView):
             return Response({"error": "Signature mismatch."}, status=400)
 
         user, created = User.objects.get_or_create(wallet_address=address)
-        # If role provided (from chain), use it
         if role in ['patient', 'provider', 'admin']:
             user.role = role
             user.save()
@@ -81,3 +80,50 @@ class SetUserRoleView(APIView):
             return Response({"success": True, "role": role})
         except User.DoesNotExist:
             return Response({"error": "User not founddd"}, status=404)
+
+class SetUserProfileView(APIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        user = request.user  # Authenticated user from JWT
+        data = request.data
+
+        print("User Profile Data:", data)
+        
+        user_profile_data = {
+            "title": data.get("title", ""),
+            "first_name": data.get("first_name", ""),
+            "last_name": data.get("last_name", ""),
+            "email": data.get("email", ""),
+            "job_title": data.get("job_title", ""),
+            "orgnisation_name": data.get("orgnisation_name", ""),
+        }
+
+        # Create or update the user profile
+        profile, created = UserProfile.objects.update_or_create(
+            user=user,
+            defaults=user_profile_data
+        )
+
+        return Response({
+            "success": True,
+            "message": "Profile created" if created else "Profile updated"
+        })
+    
+class GetUserProfileView(APIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+    def get(self, request):
+        address = request.GET.get("address")
+        user = User.objects.get(wallet_address=address)
+        user_profile = user.profile
+        data = {
+            "title": user_profile.title,
+            "first_name": user_profile.first_name,
+            "last_name": user_profile.last_name,
+            "email": user_profile.email,
+            "job_title": user_profile.job_title,
+            "orgnisation_name": user_profile.orgnisation_name,
+        }
+        return Response(data)

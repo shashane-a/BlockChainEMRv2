@@ -59,7 +59,7 @@ export default function Sidebar() {
             Prescriptions
           </NavLink>
         )}
-        {["admin", "provider"].includes(auth.role) && (
+        {/* {["admin"].includes(auth.role) && (
           <NavLink
             to="/analytics"
             className={({ isActive }) =>
@@ -68,7 +68,7 @@ export default function Sidebar() {
           >
             Analytics
           </NavLink>
-        )}
+        )} */}
         {["admin", "provider", "patient"].includes(auth.role) && (
           <NavLink
             to="/profile"

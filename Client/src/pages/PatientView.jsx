@@ -2,7 +2,7 @@ import { useParams, useNavigate  } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { fetchAndDecryptPatient, getEncryptedKeys } from "../utils/patients"; 
 import { ToastContainer, toast } from 'react-toastify';
-import { SquarePen, Plus, CircleAlert, X, Calendar } from 'lucide-react';
+import { SquarePen, Plus, CircleAlert, X, Calendar, PillBottle  } from 'lucide-react';
 import ConfirmModal from "../components/ConfirmModal";
 import { ethers } from "ethers";
 import { prepareEncryptedDataPatientUpdate } from "../utils/encryption"; 
@@ -10,6 +10,7 @@ import { contractAddress, contractABI } from "../contracts/PatientRegistryContra
 import  uploadJsonToIPFS  from "../utils/ipfs"; 
 import EditNoteModal from "../components/EditNoteModal";
 import AddAppointment from "../components/AddAppointment"; 
+import AddPrescription from "../components/AddPrescription.jsx";
 import { useAuth } from "../context/AuthContext.jsx"; 
 
 export default function PatientView() {
@@ -36,9 +37,20 @@ export default function PatientView() {
     appointment_time: "",
     appointment_duration: "",
     appointment_location: "",
-    appointment_provider: auth?.wallet_address,
+    appointment_provider: auth?.walletid,
   })
 
+  const [showAddPrescription, setShowAddPrescription] = useState(false);
+  const [prescription, setPrescription] = useState({
+    medication_name: "",
+    dosage: "",
+    unit: "",
+    frequency: "",
+    time_frame: "",
+    prescribed_by: auth?.wallet_address,
+    date_prescribed: new Date().toLocaleDateString(),
+    prescription_notes: "",
+  })
 
   const [showConfirmModal, setShowConfirmModal] = useState(false);
 
@@ -111,9 +123,48 @@ export default function PatientView() {
       appointment_duration: "",
       appointment_location: "",
       appointment_provider: auth?.wallet_address,
+      appointment_completed: false,
     });
     setPendingChanges({ ...pendingChanges, pending_appointments: true });
     toast.success("Appointment added successfully!");
+  }
+
+  async function handleAddPrescription(e) {
+    e.preventDefault();
+    setLoading(true);
+    const newPrescription = {
+      medication_name: prescription.medication_name,
+      dosage: prescription.dosage,
+      unit: prescription.unit,
+      frequency: prescription.frequency,
+      time_frame: prescription.time_frame,
+      prescribed_by: prescription.prescribed_by,
+      date_prescribed: prescription.date_prescribed,
+      prescription_notes: prescription.prescription_notes,
+    };
+
+    console.log("New prescription:", newPrescription);
+
+    const updatedPatient = {
+      ...patient,
+      prescriptions: [...(patient.prescriptions || []), newPrescription],
+    };
+
+    setPatient(updatedPatient);
+    setLoading(false);
+    setShowAddPrescription(false);
+    setPrescription({
+      medication_name: "",
+      dosage: "",
+      unit: "",
+      frequency: "",
+      time_frame: "",
+      prescribed_by: auth?.wallet_address,
+      date_prescribed: new Date().toLocaleDateString(),
+      prescription_notes: "",
+    });
+    setPendingChanges({ ...pendingChanges, pending_prescriptions: true });
+    toast.success("Prescription added successfully!");
   }
 
   async function handleUpdatePatient(event) {
@@ -211,6 +262,15 @@ export default function PatientView() {
           loading={loading}
           setShowAddAppointment={setShowAddAppointment}
           handleAddAppointment={handleAddAppointment}
+        />
+      )}
+      {showAddPrescription && (
+        <AddPrescription
+          prescription={prescription}
+          setPrescription={setPrescription}
+          loading={loading}
+          setShowAddPrescription={setShowAddPrescription}
+          handleAddPrescription={handleAddPrescription}
         />
       )}
 
@@ -328,10 +388,11 @@ export default function PatientView() {
               Edit 
             </button>
           </div>
+          <p className="text-gray-500">Providers not added</p>
         </div>
       </div>
-      <div className="flex flex-row gap-4 flex-1 overflow-auto">
-      <div className="p-4 my-5 rounded shadow-sm bg-white flex-1">
+      <div className="flex flex-row gap-4 flex-1 overflow-hidden">
+        <div className="p-4 my-5 rounded shadow-sm bg-white flex-1 flex flex-col overflow-hidden">
           <div className="flex flex-row justify-between">
             <h2 className="text-2xl font-bold mb-4 text-[#112D4E]">Appointments</h2>
             <div className="flex gap-2">
@@ -359,6 +420,7 @@ export default function PatientView() {
                     <h3 className="text-lg font-semibold text-[#112D4E]">{appointment.title}</h3>
                     <p className="text-[#112D4E]">{appointment.description}</p>
                     <p className="text-sm text-gray-500">{appointment.date} {appointment.time}</p>
+                    <p className="text-sm text-gray-500">{appointment.location}</p>
                   </div>
                   <div className="relative justify-between items-center mt-2 mr-2">
                     <button 
@@ -381,16 +443,61 @@ export default function PatientView() {
             )}
           </div>
         </div>
-        <div className="p-4 my-5 rounded shadow-sm bg-white flex-1">
+        <div className="p-4 my-5 rounded shadow-sm bg-white flex-1 flex flex-col overflow-hidden">
           <div className="flex flex-row justify-between">
             <h2 className="text-2xl font-bold mb-4 text-[#112D4E]">Prescriptions</h2>
-            <button 
-              className="flex gap-2 self-start py-2 px-2 rounded bg-[#3F72AF] text-white font-semibold text-sm cursor-pointer" 
-            >
-              <SquarePen size={20}/>
-              Edit 
-            </button>
+            <div className="flex gap-2">
+              <button 
+                  className="flex gap-2 self-start py-2 px-2 rounded bg-[#3F72AF] text-white font-semibold text-sm cursor-pointer" 
+                  onClick={() => setShowAddPrescription(true)}
+                  >
+                  <SquarePen size={20}/>
+                Add 
+              </button>
+              <button 
+                  className="flex gap-2 self-start py-2 px-2 rounded bg-[#3F72AF] text-white font-semibold text-sm cursor-pointer" 
+                  onClick={() => navigate("/prescriptions")}
+                >
+                <PillBottle size={20}/>
+                  View All 
+              </button>
+              
+            </div>
+            
           </div>
+          <div className="flex-1 overflow-y-auto">
+            {patient.prescriptions && patient.prescriptions.length > 0 ? (
+              patient.prescriptions.map((prescription, index) => (
+                <div key={index} className="border-b border-gray-300 py-2 flex justify-between items-center">
+                  <div>
+                    <h3 className="text-lg font-semibold text-[#112D4E]">{prescription.medication_name}</h3>
+                    <p className="text-[#112D4E]">{prescription.dosage} {prescription.unit}</p>
+                    <p className="text-[#112D4E]">{prescription.frequency} times per {prescription.time_frame}</p>
+                    <p className="text-sm text-gray-500">{prescription.date_prescribed}</p>
+                    
+                    <p className="text-sm text-gray-500">{prescription.prescription_notes}</p>
+                  </div>
+                  <div className="relative justify-between items-center mt-2 mr-2">
+                    <button 
+                      className="justify-self-end text-[#3F72AF] hover:text-[#112D4E] font-semibold text-sm"
+                      onClick={() => {
+                        setPatient((prev) => ({
+                          ...prev,
+                          prescriptions: prev.prescriptions.filter((_, i) => i !== index),
+                        }));
+                        setPendingChanges({ ...pendingChanges, pending_prescriptions: true });
+                      }}
+                    >
+                      <X size={20} strokeWidth={3} className="text-white bg-[#cc6f6f] rounded"  />
+                    </button>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <p className="text-gray-500">No prescriptions available.</p>
+            )}
+          </div>
+          
         </div>
       </div>
     </div>

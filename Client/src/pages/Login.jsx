@@ -10,12 +10,14 @@ import { useNavigate } from "react-router-dom";
 import { usePatientData } from '../context/PatientDataContext.jsx';
 import { fetchPatientData, fetchPatientRecord, fetchAccessiblePatients, fetchAndDecryptPatient} from "../utils/patients";
 import { addPatientRecord } from '../utils/addPatienRecord.js';
+import AddProviderProfile from '../components/AddProviderProfile.jsx';
 import AddPatientModal from '../components/AddPatient.jsx';
 
 export default function Login() {
   const [address, setAddress] = useState('');
   const [loading, setLoading] = useState(false);
   const [addPatientLoading, setAddPatientLoading] = useState(false);
+  const [addProviderLoading, setAddProviderLoading] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [showRolePicker, setShowRolePicker] = useState(false);
   const [selectedRole, setSelectedRole] = useState('');
@@ -23,6 +25,7 @@ export default function Login() {
   const { auth, setAuth } = useAuth();
   const { patients, setPatients } = usePatientData();
   const [showAddPatientModal, setShowAddPatientModal] = useState(false);
+  const [showAddProviderModal, setShowAddProviderModal] = useState(false);
   const navigate = useNavigate();
 
   const [patientForm, setPatientForm] = useState({
@@ -41,7 +44,18 @@ export default function Login() {
       country: "",
     },
     wallet_address: "",
+    created_date: new Date().toISOString().split("T")[0],
+    updated_date: new Date().toISOString().split("T")[0],
   });
+
+  const [providerForm, setProviderForm] = useState({
+    title: "",
+    first_name: "",
+    last_name: "",
+    email: "",
+    job_title: "",
+    organisation_name: "",
+  })
 
   const loginWithWallet = async () => {
     setLoading(true);
@@ -271,9 +285,10 @@ export default function Login() {
         setShowAddPatientModal(true);
       }
 
-      // toast.success(`Role set to ${selectedRole}`);
-      // setLoading(false);
-      // navigate('/dashboard');
+      //set user profile for provider in django
+      if (selectedRole === 'provider'){
+        setShowAddProviderModal(true);
+      }
 
     } catch (err) {
       console.log(err);
@@ -297,16 +312,44 @@ async function registerRoleOnChain(selectedRole) {
     } else {
       throw new Error("Invalid role");
     }
-    await tx.wait(); // Wait for tx confirmation
-    // alert('Role registered on blockchain!');
+    await tx.wait(); 
+
     toast.success('Role registered on blockchain!');
     return true;
   } catch (err) {
     console.error('Smart contract error:', err);
-    // alert('Blockchain registration failed');
+
     toast.error('Blockchain registration failed');
     return false;
   }
+}
+
+function handleAddProviderProfile() {
+  setAddProviderLoading(true);
+  const token = localStorage.getItem('accessToken');
+  axios.post('http://localhost:8000/api/auth/set_user_profile/', {
+    address: auth.walletid,
+    title: providerForm.title,
+    first_name: providerForm.first_name,
+    last_name: providerForm.last_name,
+    email: providerForm.email,
+    job_title: providerForm.job_title,
+    organisation_name: providerForm.organisation_name,
+  }, {
+    headers: { Authorization: `Bearer ${token}` }
+  })
+  .then((response) => {
+    console.log(response.data);
+    toast.success('Provider profile created successfully!');
+    setShowAddProviderModal(false);
+  })
+  .catch((error) => {
+    console.error(error);
+    toast.error('Failed to create provider profile!');
+  })
+  .finally(() => {
+    setAddProviderLoading(false);
+  });
 }
 
   return (
@@ -421,8 +464,18 @@ async function registerRoleOnChain(selectedRole) {
           patientForm={patientForm}
           setPatientForm={setPatientForm}
           handleAddPatient={handleRegisterPatient}
-          isAdminAddPatient={false} // Set to false for non-admins
-          walletid={auth.walletid} // Pass the wallet ID of the logged-in user
+          isAdminAddPatient={false} 
+          walletid={auth.walletid} 
+        />
+      )}
+      {showAddProviderModal && (
+        <AddProviderProfile
+          show={showAddProviderModal}
+          onClose={() => setShowAddProviderModal(false)}
+          loading={setAddProviderLoading}
+          formData={providerForm}
+          setFormData={setProviderForm}
+          handleSubmit={handleAddProviderProfile}
         />
       )}
     </div>
