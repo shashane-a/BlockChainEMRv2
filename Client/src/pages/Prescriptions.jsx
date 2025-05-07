@@ -69,6 +69,40 @@ const loadPatients = async () => {
         
         setLoadingPatients(false);
     }
+    else if (auth.role == "patient"){
+      const patient = await fetchAndDecryptPatient(auth.walletid);
+      // console.log(encryptedPatient);
+      setPatients([patient]);
+      // console.log("Decrypted patient data:", encryptedPatient);
+
+      const allPrescriptions = []
+
+      const fullName = `${patient.first_name} ${patient.last_name}`;
+      console.log('patient 🦊',patient);
+      if (Array.isArray(patient.prescriptions)) {
+        for (const prescription of patient.prescriptions) {
+          allPrescriptions.push({
+            id: `${patient.wallet_address}-${prescription.date_prescribed}`,
+            patientName: fullName,
+            medication_name: prescription.medication_name,
+            dosage: prescription.dosage,
+            unit: prescription.unit,
+            frequency: prescription.frequency,
+            time_frame: prescription.time_frame,
+            prescribedBy: prescription.prescribed_by, 
+            datePrescribed: prescription.date_prescribed, 
+            notes: prescription.prescription_notes,
+            wallet_address: patient.wallet_address,
+          });
+        }
+      }
+        
+
+        setPrescriptions(allPrescriptions);
+        
+        setLoadingPatients(false);
+
+    }
   }
 
   useEffect(() => {
@@ -141,12 +175,14 @@ const loadPatients = async () => {
                     <p><strong>Notes:</strong> {prescription.notes || <span className="text-gray-400 italic">No notes provided</span>}</p>
                   </div>
                 </div>
+                {(auth.role === "admin" ||auth.role === "provider" ) && (
                 <Link 
                 to={`/patients/${prescription.wallet_address}`} 
                 className="inline-block mt-2 py-1 px-3 bg-[#3F72AF] text-white rounded text-sm font-semibold"
               >
                 View Patient
               </Link>
+                )}
               </div>
             ))}
           </div>

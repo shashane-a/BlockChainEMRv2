@@ -20,6 +20,7 @@ export default function Appointments() {
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
+
   const handleCompleteAppointment = async () => {
     const updatedPatients = [...patients];
   
@@ -158,10 +159,10 @@ export default function Appointments() {
     }
 
     else if (auth.role == "patient"){
-      const patient = await fetchAndDecryptPatient(userAddress);
-      console.log(encryptedPatient);
-      setPatients([encryptedPatient]);
-      console.log("Decrypted patient data:", encryptedPatient);
+      const patient = await fetchAndDecryptPatient(auth.walletid);
+      // console.log(encryptedPatient);
+      setPatients([patient]);
+      // console.log("Decrypted patient data:", encryptedPatient);
 
       const allAppointments = [];
 
@@ -186,9 +187,12 @@ export default function Appointments() {
           });
         });
       }
-      
+      setEvents(allAppointments);
+
+      setLoadingPatients(false);
 
     }
+
   };
 
   useEffect(() => {
@@ -243,12 +247,14 @@ export default function Appointments() {
                   <Check size={20} strokeWidth={3}/>
                 Go to Patient Profile 
               </button> */}
+              {(auth.role === "admin" ||auth.role === "provider" ) && (
               <Link 
                 to={`/patients/${selectedEvent.wallet_address}`} 
                 className="inline-block mt-2 p-3 bg-[#3F72AF]  text-white rounded text-sm font-semibold"
               >
                 Go to Patient Profile
               </Link>
+              )}
           </div>
     </div>
       )}

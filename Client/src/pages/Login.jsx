@@ -285,10 +285,6 @@ export default function Login() {
         setShowAddPatientModal(true);
       }
 
-      //set user profile for provider in django
-      if (selectedRole === 'provider'){
-        setShowAddProviderModal(true);
-      }
 
     } catch (err) {
       console.log(err);
@@ -468,7 +464,7 @@ function handleAddProviderProfile() {
           walletid={auth.walletid} 
         />
       )}
-      {showAddProviderModal && (
+      {/* {showAddProviderModal && (
         <AddProviderProfile
           show={showAddProviderModal}
           onClose={() => setShowAddProviderModal(false)}
@@ -477,7 +473,7 @@ function handleAddProviderProfile() {
           setFormData={setProviderForm}
           handleSubmit={handleAddProviderProfile}
         />
-      )}
+      )} */}
     </div>
   );
 }

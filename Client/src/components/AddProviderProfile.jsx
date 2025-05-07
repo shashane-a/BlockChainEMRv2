@@ -1,18 +1,31 @@
 import React from 'react';
 
+
 export default function AddProviderProfile({ 
   show, 
   onClose, 
-  loading, 
-  formData, 
-  setFormData, 
-  handleSubmit 
 }) {
   if (!show) return null;
 
-  const handleInputChange = (e) => {
+
+  const [formData, setFormData] = React.useState({
+    title: "",
+    first_name: "",
+    last_name: "",
+    email: "",
+    job_title: "",
+    organisation_name: "",
+  });
+  const [loading, setLoading] = React.useState(false);
+
+
+  function handleInputChange(e) {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
+
+  function handleSubmit(e) {
+    
+  }
 
   return (
     <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50" onClick={onClose}>

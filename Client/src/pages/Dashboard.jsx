@@ -4,6 +4,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 
 export default function Dashboard() {
+  const { auth } = useAuth();
   const { patients, setPatients } = usePatientData();
   const [ providers, setProviders ] = useState([
     {
@@ -54,30 +55,22 @@ export default function Dashboard() {
     },
   ]);
 
-  
-  // useEffect(() => {
-  //   const fetchData = async () => {
-  //     const events = await fetchAllEvents();
-  //     console.log("Events:", events);
-  //   };
-
-  //   fetchData();
-  // })
-
   return (
     <div className="p-4 flex flex-col gap-4 h-screen">
       <h2 className="text-2xl font-bold text-gray-800">Dashboard</h2>
 
+      { auth.role === "admin" && (
       <div className="flex flex-row gap-4 flex-1 overflow-hidden">
-        {/* Left Column: Welcome (short) + Provider Access (grows) */}
+
         <div className="flex flex-col gap-4 flex-1 overflow-hidden">
-          {/* Welcome Section */}
+
           <div className="p-4 rounded shadow-md bg-white flex-shrink-0">
             <h2 className="text-2xl font-bold mb-2 text-[#112D4E]">Welcome John Smith</h2>
             <p className="text-gray-800 text-xl font-semibold">Administrator</p>
             <p className="text-gray-500">Radiology Lead</p>
             <p className="text-gray-500">MediCare Clinic</p>
           </div>
+        
 
           {/* Provider Access Section */}
           <div className="p-4 rounded shadow-sm bg-white flex-1 flex flex-col overflow-hidden">
@@ -178,8 +171,10 @@ export default function Dashboard() {
               )}
             
           </div>
+        
         </div>
       </div>
+      )}
     </div>
 
 
