@@ -45,7 +45,7 @@ const loadPatients = async () => {
 
         for (const patient of decryptedPatients) {
           const fullName = `${patient.first_name} ${patient.last_name}`;
-          console.log('patient 🦊',patient);
+          console.log('patient ',patient);
           if (Array.isArray(patient.prescriptions)) {
             for (const prescription of patient.prescriptions) {
               allPrescriptions.push({
@@ -78,7 +78,7 @@ const loadPatients = async () => {
       const allPrescriptions = []
 
       const fullName = `${patient.first_name} ${patient.last_name}`;
-      console.log('patient 🦊',patient);
+      console.log('patient ',patient);
       if (Array.isArray(patient.prescriptions)) {
         for (const prescription of patient.prescriptions) {
           allPrescriptions.push({
@@ -102,6 +102,54 @@ const loadPatients = async () => {
         
         setLoadingPatients(false);
 
+    }
+    else if (auth.role == "provider"){
+      console.log('auth',auth);
+      const accessiblePatients = await fetchAccessiblePatients(auth.walletid);  // list of patients accessible
+      const decryptedPatients = [];
+      console.log("Accessible patients:", accessiblePatients);
+    
+      for (const patient of accessiblePatients) {
+        try {
+          const decrypted = await fetchAndDecryptPatient(patient.wallet_address);
+          decryptedPatients.push(decrypted);
+        } catch (error) {
+          console.error(`Failed to decrypt patient ${patient.wallet_address}:`, error);
+        }
+      }
+
+      console.log(decryptedPatients);
+      setPatients(decryptedPatients);
+
+      const allPrescriptions = []
+
+      for (const patient of decryptedPatients) {
+          const fullName = `${patient.first_name} ${patient.last_name}`;
+          console.log('patient ',patient);
+          if (Array.isArray(patient.prescriptions)) {
+            for (const prescription of patient.prescriptions) {
+              allPrescriptions.push({
+                id: `${patient.wallet_address}-${prescription.date_prescribed}`,
+                patientName: fullName,
+                medication_name: prescription.medication_name,
+                dosage: prescription.dosage,
+                unit: prescription.unit,
+                frequency: prescription.frequency,
+                time_frame: prescription.time_frame,
+                prescribedBy: prescription.prescribed_by, 
+                datePrescribed: prescription.date_prescribed, 
+                notes: prescription.prescription_notes,
+                wallet_address: patient.wallet_address,
+              });
+            }
+          }
+        }
+        console.log("All prescriptions:", allPrescriptions);
+        setPrescriptions(allPrescriptions);
+        
+        setLoadingPatients(false);
+
+      
     }
   }
 

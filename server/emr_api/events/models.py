@@ -16,6 +16,8 @@ class Event(models.Model):
         ('prescription_removed', 'Prescription Removed'),
         ('access_granted', 'Access Granted'),
         ('access_revoked', 'Access Revoked'),
+        ('note_added', 'Note Added'),
+        ('note_removed', 'Note Removed'),
     ]
     
     id = models.AutoField(primary_key=True)
@@ -23,6 +25,7 @@ class Event(models.Model):
     event_details = models.TextField()
     timestamp = models.DateTimeField(auto_now_add=True)
     related_wallet_address = models.CharField(max_length=42)
+    related_patient_wallet_address = models.CharField(max_length=42, null=True, blank=True) 
 
     def __str__(self):
         return f"Event {self.id} - {self.event_type} at {self.timestamp}"

@@ -46,38 +46,77 @@ useEffect(() => {
 
 }, [auth.role])
 
-  useEffect(() => {
-    const fetchProviders = async () => {
-      try {
-        const response = await getProviders();
-        setProviders(response);
-        console.log(providers)
-        console.log("Providers data:", response);
-      } catch (error) {
-        console.error("Error fetching providers:", error);
-      }
-    };
+useEffect(() => {
+  const fetchProviders = async () => {
+    try {
+      const response = await getProviders();
+      setProviders(response);
+      console.log(providers)
+      console.log("Providers data:", response);
+    } catch (error) {
+      console.error("Error fetching providers:", error);
+    }
+  };
 
-    fetchProviders();
-  },[auth.role])
+  fetchProviders();
+},[auth.role])
 
-  async function getProviderProfile() {
-    const response = await axios.get("http://localhost:8000/api/auth/get_user_profile/?address=" + `${auth.walletid}`,
+async function getProviderProfile() {
+  const response = await axios.get("http://localhost:8000/api/auth/get_user_profile/?address=" + `${auth.walletid}`,
+    {
+    headers: { Authorization: `Bearer ${auth.accessToken}` }
+  });
+  console.log("Provider profile response:", response.data);
+  return response;
+}
+
+async function getProviders() {
+  const response = await axios.get("http://127.0.0.1:8000/api/auth/get_all_profiles/",
+    {
+      headers: { Authorization: `Bearer ${auth.accessToken}` }
+    });
+  return response.data;
+
+}
+
+async function getEvents() {
+
+  if (auth.role === "admin" || auth.role === "provider") {
+
+    const response = await axios.get("http://localhost:8000/api/events/get_events/?related_wallet_address=" + `${auth.walletid}`,
       {
       headers: { Authorization: `Bearer ${auth.accessToken}` }
     });
-    console.log("Provider profile response:", response.data);
+    console.log("events", response.data);
     return response;
   }
 
-  async function getProviders() {
-    const response = await axios.get("http://127.0.0.1:8000/api/auth/get_all_profiles/",
-      {
-        headers: { Authorization: `Bearer ${auth.accessToken}` }
-      });
-    return response.data;
+  if (auth.role === "patient") {
 
+    const response = await axios.get("http://localhost:8000/api/events/get_events/?related_patient_wallet_address=" + `${auth.walletid}`,
+      {
+      headers: { Authorization: `Bearer ${auth.accessToken}` }
+    });
+    console.log("events", response.data);
+    return response;
   }
+}
+
+useEffect(() => {
+  const fetchEvents = async () => {
+    try {
+      const response = await getEvents();
+      setEvents(response.data.events);
+      console.log(events);
+    } catch (error) {
+      console.error("Error fetching events:", error);
+    }
+  };
+
+  fetchEvents();
+},[auth.role])
+
+
 
 const loadPatient = async () => {
   const encryptedPatient = await fetchAndDecryptPatient(auth.walletid);
@@ -165,15 +204,16 @@ useEffect(() => {
               <h2 className="text-2xl font-bold mb-4 text-[#112D4E]">Recent Activity</h2>
               
             </div>
-            <div>
+            <div className="flex-1 overflow-y-auto h-full">
               {events.length > 0 ? (
-                <div className="flex flex-col gap-2">
+                <div className="flex flex-col gap-1">
                   {events.map((event, index) => (
                     <div key={index} className="p-4 my-2 rounded shadow-md bg-[#edeff1] flex flex-row justify-between">
                       <div>
-                        <p><strong>Type:</strong> {event.type}</p>
-                        <p><strong>Date:</strong> {event.date}</p>
-                        <p><strong>Description:</strong> {event.description}</p>
+                        <p><strong>Type:</strong> {event.event_type}</p>
+                        <p><strong>Date:</strong> {event.timestamp ? new Date(event.timestamp).toLocaleString(): ''}</p>
+                        <p className="text-sm text-gray-500" ><strong>Description:</strong> {event.event_details}</p>
+                        
                       </div>
                     </div>
                   ))}
@@ -286,15 +326,16 @@ useEffect(() => {
               <h2 className="text-2xl font-bold mb-4 text-[#112D4E]">Recent Activity</h2>
               
             </div>
-            <div>
+            <div className="flex-1 overflow-y-auto h-full">
               {events.length > 0 ? (
-                <div className="flex flex-col gap-2">
+                <div className="flex flex-col gap-1">
                   {events.map((event, index) => (
                     <div key={index} className="p-4 my-2 rounded shadow-md bg-[#edeff1] flex flex-row justify-between">
                       <div>
-                        <p><strong>Type:</strong> {event.type}</p>
-                        <p><strong>Date:</strong> {event.date}</p>
-                        <p><strong>Description:</strong> {event.description}</p>
+                        <p><strong>Type:</strong> {event.event_type}</p>
+                        <p><strong>Date:</strong> {event.timestamp ? new Date(event.timestamp).toLocaleString(): ''}</p>
+                        <p className="text-sm text-gray-500" ><strong>Description:</strong> {event.event_details}</p>
+                        
                       </div>
                     </div>
                   ))}
@@ -426,24 +467,33 @@ useEffect(() => {
               <h2 className="text-2xl font-bold mb-4 text-[#112D4E]">Recent Activity</h2>
               
             </div>
-            <div>
-              {events.length > 0 ? (
-                <div className="flex flex-col gap-2">
-                  {events.map((event, index) => (
-                    <div key={index} className="p-4 my-2 rounded shadow-md bg-[#edeff1] flex flex-row justify-between">
-                      <div>
-                        <p><strong>Type:</strong> {event.type}</p>
-                        <p><strong>Date:</strong> {event.date}</p>
-                        <p><strong>Description:</strong> {event.description}</p>
+            <div className="flex-1 overflow-y-auto h-full">
+              {events.filter(event =>
+                event.event_type === "Patient Prescriptions Updated" ||
+                event.event_type === "Patient Appointments Updated"
+              ).length > 0 ? (
+                <div className="flex flex-col gap-1">
+                  {events
+                    .filter(event =>
+                      event.event_type === "Patient Prescriptions Updated" ||
+                      event.event_type === "Patient Appointments Updated"
+                    )
+                    .map((event, index) => (
+                      <div key={index} className="p-4 my-2 rounded shadow-md bg-[#edeff1] flex flex-row justify-between">
+                        <div>
+                          <p><strong>Type:</strong> {event.event_type}</p>
+                          <p><strong>Date:</strong> {event.timestamp ? new Date(event.timestamp).toLocaleString() : ''}</p>
+                          <p className="text-sm text-gray-500"><strong>Description:</strong> {event.event_details}</p>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    ))}
                 </div>
               ) : (
                 <div className="flex-1 overflow-y-auto">
                   <p className="text-gray-500">No recent activity</p>
                 </div>
               )}
+
             </div>
           </div>
         </div>

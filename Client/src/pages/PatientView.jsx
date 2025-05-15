@@ -12,6 +12,7 @@ import EditNoteModal from "../components/EditNoteModal";
 import AddAppointment from "../components/AddAppointment"; 
 import AddPrescription from "../components/AddPrescription.jsx";
 import { useAuth } from "../context/AuthContext.jsx"; 
+import axios from "axios";
 
 export default function PatientView() {
   const { walletAddress } = useParams();
@@ -71,6 +72,26 @@ export default function PatientView() {
 
     loadPatient();
   }, [walletAddress]);
+
+  async function recordEvent(event_type, event_details) {
+    try {
+      const response = await axios.post("http://localhost:8000/api/events/add_event/", {
+          event_type: event_type,
+          event_details: event_details,
+          related_wallet_address: auth?.walletid,
+          related_patient_wallet_address: patient?.wallet_address,
+      },{ 
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+        },
+      }
+      );
+      console.log(response.data);
+    } catch (error) {
+      console.error("Error recording event:", error);
+      toast.error("Error recording event.");
+    }
+  }
 
   function handleAddNote(e) {
     e.preventDefault();
@@ -172,6 +193,9 @@ export default function PatientView() {
     setUpdatingPatient(true);
     // Logic to update patient data in ipfs and smart contract
 
+
+
+
     console.log("Updating patient data:", patient);
 
      try {
@@ -205,6 +229,18 @@ export default function PatientView() {
       console.error("Error connecting to MetaMask:", error);
       toast.error("Error connecting to MetaMask. Please try again.");
      }
+
+    if (pendingChanges.pending_notes) {
+      recordEvent("Patient Notes Updated", `Updated notes for patient ${patient.wallet_address}`);
+    }
+
+    if (pendingChanges.pending_appointments) {
+      recordEvent("Patient Appointments Updated", `Updated notes for patient ${patient.wallet_address}`);
+    }
+
+    if (pendingChanges.pending_prescriptions) {
+      recordEvent("Patient Prescriptions Updated", `Updated notes for patient ${patient.wallet_address}`);
+    }
 
     setUpdatingPatient(false);
     //set all pending changes to false

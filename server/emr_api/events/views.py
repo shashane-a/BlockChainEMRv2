@@ -10,6 +10,7 @@ class AddEventView(APIView):
         event_type = request.data.get("event_type")
         event_details = request.data.get("event_details")
         related_wallet_address = request.data.get("related_wallet_address")
+        related_patient_wallet_address = request.data.get("related_patient_wallet_address")
 
         if not event_type or not event_details or not related_wallet_address:
             return Response({"error": "Missing required fields."}, status=400)
@@ -17,9 +18,11 @@ class AddEventView(APIView):
         event = Event.objects.create(
             event_type=event_type,
             event_details=event_details,
-            related_wallet_address=related_wallet_address
+            related_wallet_address=related_wallet_address,
+            related_patient_wallet_address=related_patient_wallet_address
         )
         return Response({"message": "Event added successfully.", "event_id": event.id})
+    
     
 class GetEventsView(APIView):
     permission_classes = [IsAuthenticated]
@@ -30,10 +33,16 @@ class GetEventsView(APIView):
         events = None
         # for provided related_wallet_address, filter the events
         related_wallet_address = request.query_params.get("related_wallet_address")
+        print(related_wallet_address)
         if related_wallet_address:
             events = Event.objects.filter(related_wallet_address=related_wallet_address).values()
-        else:
-            events = Event.objects.all().values()
+            
+        related_patient_wallet_address = request.query_params.get("related_patient_wallet_address")
+        if related_patient_wallet_address:
+            events = Event.objects.filter(related_patient_wallet_address=related_patient_wallet_address).values()
+        
         return Response({"events": list(events)})
+        
+       
 
         
