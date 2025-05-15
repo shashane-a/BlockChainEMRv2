@@ -32,7 +32,6 @@ export function AuthProvider({ children }) {
     }
   }, [auth.accessToken]);
 
-  // Logout helper
   const logout = () => {
     setAuth({ accessToken: null, role: null, walletid: null });
     localStorage.removeItem("accessToken");

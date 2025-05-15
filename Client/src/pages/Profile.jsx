@@ -1,18 +1,59 @@
-import React, {useState, useEffect} from "react";
+import  {useState, useEffect} from "react";
 import { useAuth } from "../context/AuthContext.jsx";
 import { usePatientData } from "../context/PatientDataContext.jsx";
-import AddProviderProfile from "../components/AddProviderProfile.jsx";
 import axios from "axios";
 import { SquarePen  } from 'lucide-react';
+import { ethers } from "ethers";
+import AddPatientModal from "../components/AddPatient.jsx";
+import { prepareEncryptedDataPatientUpdate } from "../utils/encryption"; 
+import { fetchAndDecryptPatient, getEncryptedKeys } from "../utils/patients"; 
+import { contractAddress, contractABI } from "../contracts/PatientRegistryContract";
+import { toast } from "react-toastify";
+import  uploadJsonToIPFS  from "../utils/ipfs"; 
+
 
 export default function Profile() {
   const { auth } = useAuth();
-  const { patients } = usePatientData();
+  const { patients, setPatients } = usePatientData();
+  const [patient, setPatient] = useState(null);
   const [showAddProviderProfile, setShowAddProviderProfile] = useState(false);
   const [providerProfile, setProviderProfile] = useState({});
+  const [showEditPatientModal, setShowEditPatientModal] = useState(false);
+   
+  const [patientForm, setPatientForm] = useState({
+    wallet_address: "",
+    first_name: "",
+    last_name: "",
+    date_of_birth: "",
+    gender: "",
+    phoneNumber: "",
+    email: "",
+    address: {
+      house_number: "",
+      street: "",
+      city: "",
+      county: "",
+      postcode: "",
+      country: "",
+    },
+  });
+  const [loading, setLoading] = useState(false);
+
+  // useEffect(() => {
+  //   async function loadPatient() {
+  //     const patient = await fetchAndDecryptPatient(auth.walletid);
+  //     setPatients([patient]);
+  //   }
+
+  //   loadPatient();
+  // }, [walletAddress]);
+
+   async function loadPatient() {
+      const patient = await fetchAndDecryptPatient(auth.walletid);
+      setPatients([patient]);
+    }
 
   useEffect(() => {
-    //open provider profile modal if user is a provider/admin and has no profile
     const fetchProfile = async () => {
   
       if (auth.role === "provider" || auth.role === "admin") {
@@ -32,9 +73,45 @@ export default function Profile() {
     }
     
     console.log("Provider profile:", providerProfile);
-    //fetch profile data from the server
   
   }, [auth.role])
+
+const handleUpdatePatient = async (event) => {
+  event.preventDefault();
+  setLoading(true);
+
+  try {
+    if (!window.ethereum) throw new Error("Please install MetaMask!");
+    const provider = new ethers.BrowserProvider(window.ethereum);
+    const signer = await provider.getSigner();
+    const wallet_address = patientForm.wallet_address;
+
+    const encryptedKeys = await getEncryptedKeys(wallet_address);
+    const encryptedDataPackage = await prepareEncryptedDataPatientUpdate(patientForm, encryptedKeys);
+    const uploadResponse = await uploadJsonToIPFS(encryptedDataPackage, `${wallet_address}.json`);
+
+    if (!uploadResponse) {
+      toast.error("Failed to upload to IPFS");
+      setLoading(false);
+      return;
+    }
+
+    const contract = new ethers.Contract(contractAddress, contractABI, signer);
+    const tx = await contract.updatePatientRecord(wallet_address, uploadResponse.cid);
+    await tx.wait();
+
+    toast.success("Record updated successfully!");
+    setShowEditPatientModal(false);
+
+  } catch (error) {
+    console.error("Update failed:", error);
+    toast.error("Update failed. Please try again.");
+  } finally {
+    setLoading(false);
+    loadPatient();
+  }
+};
+
 
   async function getProviderProfile() {
     const response = await axios.get("http://localhost:8000/api/auth/get_user_profile/?address=" + `${auth.walletid}`,
@@ -45,15 +122,30 @@ export default function Profile() {
     return response;
   }
 
+
   return (
     
     <div className="p-4 flex flex-col gap-4">
       {(auth.role === "admin" || auth.role === "provider") && (
         <div>
           <h2 className="text-2xl font-bold text-gray-800">Your Profile</h2>
-          {/* Admin specific content can go here */}
         </div>
       )}
+
+      {showEditPatientModal && (
+        <AddPatientModal
+        show={showEditPatientModal}
+        onClose={() => setShowEditPatientModal(false)}
+        loading={loading}
+        patientForm={patientForm}
+        setPatientForm={setPatientForm}
+        handleAddPatient={handleUpdatePatient}
+        isAdminAddPatient={false}
+        walletid={auth.walletid}
+        updatePatient={true}
+        />
+      )}
+
       
       {auth.role === "patient" && (
         <div>
@@ -82,7 +174,10 @@ export default function Profile() {
             </div>
             <button 
               className="flex gap-2 self-start py-3 px-5 rounded bg-[#3F72AF] text-white font-semibold text-sm cursor-pointer shadow-md" 
-              onClick={() => setShowEditNotes(true)}
+              onClick={() => {
+                setPatientForm(patients[0]);
+                setShowEditPatientModal(true);
+              }}
             >
               <SquarePen size={20} strokeWidth={3} />
               Edit 

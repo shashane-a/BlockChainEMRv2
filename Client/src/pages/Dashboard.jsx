@@ -234,10 +234,10 @@ useEffect(() => {
             <div className="flex flex-row justify-between">
               <h2 className="text-2xl font-bold mb-4 text-[#112D4E]">Recenly joined Providers</h2>
               <div className="flex gap-2">
-              <button 
+              {/* <button 
                 className="flex gap-2 self-start py-2 px-2 rounded bg-[#3F72AF] text-white font-semibold text-sm cursor-pointer">
                 View all
-              </button>
+              </button> */}
               </div>
             </div>
             <div className="flex-1 overflow-y-auto h-full">
@@ -545,10 +545,10 @@ useEffect(() => {
             <div className="flex flex-row justify-between">
               <h2 className="text-2xl font-bold mb-4 text-[#112D4E]">Recenly Added Providers</h2>
               <div className="flex gap-2">
-              <button 
+              {/* <button 
                 className="flex gap-2 self-start py-2 px-2 rounded bg-[#3F72AF] text-white font-semibold text-sm cursor-pointer">
                 View all
-              </button>
+              </button> */}
               </div>
             </div>
             <div className="flex-1 overflow-y-auto h-full">

@@ -359,7 +359,7 @@ export default function Access() {
           </button>
         </div>
    
-        {auth.role === "patient" && (
+        {/* {auth.role === "patient" && (
           <div>
             <h3 className="text-lg font-bold mt-2 text-[#112D4E]/85">
               Revoke Access from all providers
@@ -372,7 +372,7 @@ export default function Access() {
               Revoke Access from All
             </button>
           </div>
-        )}
+        )} */}
         
       </div>
     </div>
