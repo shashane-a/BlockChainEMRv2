@@ -152,7 +152,7 @@ export default function Access() {
       setProviderRevokeAddress("");
     } catch (error) {
       console.error(`Error ${access ? 'granting' : 'revoking'} access:`, error);
-      toast.error(`Error ${access ? 'granting' : 'revoking'}. Please try again.`);
+      // toast.error(`Error ${access ? 'granting' : 'revoking'}. Please try again.`);
     } 
 
     //add provider address to patient record

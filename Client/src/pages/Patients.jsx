@@ -104,7 +104,7 @@ export default function Patients() {
       const provider = new ethers.BrowserProvider(window.ethereum);
       const signer = await provider.getSigner();
   
-      const result = await addPatientRecord(patientForm, signer, toast);
+      const result = await addPatientRecord(patientForm, signer, toast, true);
   
       if (result.success) {
         setShowAddPatient(false);

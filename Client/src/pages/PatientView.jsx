@@ -442,6 +442,15 @@ export default function PatientView() {
               <p className="text-gray-500">No appointments available.</p>
             )}
           </div>
+          {pendingChanges.pending_appointments ? (
+            <div className="flex items-center text-[#afafaf] mt-2">
+              <div className="flex items-center justify-center">
+                <CircleAlert size={20} strokeWidth={3} className="text-[#cc6f6f] mr-2" />
+              </div>
+              Changes are not saved yet!
+            </div>
+          ) : ( null )}
+
         </div>
         <div className="p-4 my-5 rounded shadow-sm bg-white flex-1 flex flex-col overflow-hidden">
           <div className="flex flex-row justify-between">
@@ -497,6 +506,14 @@ export default function PatientView() {
               <p className="text-gray-500">No prescriptions available.</p>
             )}
           </div>
+          {pendingChanges.pending_prescriptions ? (
+            <div className="flex items-center text-[#afafaf] mt-2">
+              <div className="flex items-center justify-center">
+                <CircleAlert size={20} strokeWidth={3} className="text-[#cc6f6f] mr-2" />
+              </div>
+              Changes are not saved yet!
+            </div>
+          ) : ( null )}
           
         </div>
       </div>

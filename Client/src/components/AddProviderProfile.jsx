@@ -7,6 +7,7 @@ import { useAuth } from "../context/AuthContext.jsx";
 export default function AddProviderProfile({ 
   show, 
   onClose, 
+  setProviderProfile,
 }) {
   if (!show) return null;
 
@@ -39,7 +40,7 @@ export default function AddProviderProfile({
           last_name: formData.last_name,
           email: formData.email,
           job_title: formData.job_title,
-          organisation_name: formData.organisation_name,
+          orgnisation_name: formData.organisation_name,
       },{ 
         headers: {
           Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
@@ -47,12 +48,25 @@ export default function AddProviderProfile({
       }
       );
 
+      
+
       if (response.status === 200) {
         console.log("Profile created successfully:", response.data);
         toast.success("Profile created successfully!");
+
+        const providerProfileData = await axios.get("http://localhost:8000/api/auth/get_user_profile/?address=" + `${auth.walletid}`,
+          {
+          headers: { Authorization: `Bearer ${auth.accessToken}` }
+        });
+        console.log("Provider profile response:", providerProfileData.data);
+
+        setProviderProfile(providerProfileData.data);
         setLoading(false);
-        onClose(); // Close the modal after successful submission
+        onClose(); 
       }
+
+      console.log("Profile data:", response.data);
+      
     }catch (error) {
       console.error("Error submitting form:", error);
       toast.error("Error submitting form. Please try again.");

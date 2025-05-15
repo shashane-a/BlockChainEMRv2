@@ -14,14 +14,15 @@ class Event(models.Model):
         ('appointment_cancelled', 'Appointment Cancelled'),
         ('prescription_added', 'Prescription Added'),
         ('prescription_removed', 'Prescription Removed'),
+        ('access_granted', 'Access Granted'),
+        ('access_revoked', 'Access Revoked'),
     ]
-
     
     id = models.AutoField(primary_key=True)
     event_type = models.CharField(max_length=50, choices=event_types)
-    event_name = models.CharField(max_length=255)
-    event_description = models.TextField()
+    event_details = models.TextField()
     timestamp = models.DateTimeField(auto_now_add=True)
+    related_wallet_address = models.CharField(max_length=42)
 
     def __str__(self):
         return f"Event {self.id} - {self.event_type} at {self.timestamp}"

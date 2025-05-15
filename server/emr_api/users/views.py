@@ -157,7 +157,11 @@ class GetAllProfilesView(APIView):
     def get(self, request):
         user_profiles = UserProfile.objects.all()
         data = []
+        print(request.user.wallet_address)
         for profile in user_profiles:
+            # Skip the current user's profile
+            if profile.user.wallet_address == request.user.wallet_address:
+                continue
             data.append({
                 "wallet_address": profile.user.wallet_address,
                 "title": profile.title,
@@ -166,5 +170,6 @@ class GetAllProfilesView(APIView):
                 "email": profile.email,
                 "job_title": profile.job_title,
                 "orgnisation_name": profile.orgnisation_name,
+                "date_joined": profile.user.created_at
             })
         return Response(data, status=200)

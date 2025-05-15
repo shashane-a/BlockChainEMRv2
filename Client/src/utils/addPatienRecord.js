@@ -84,11 +84,28 @@ export async function addPatientRecord(
         userRegistryABI,
         signer
       );
+
+      console.log("Admin adding patient:", wallet_address);
       const tx2 = await userRegistryContract.adminAddPatient(wallet_address);
       await tx2.wait();
     }
 
     toast?.success("Patient added successfully!");
+
+    const eventResponse = await axios.post(
+      "http://localhost:8000/api/events/add_event/",
+      {
+        related_wallet_address: adminAddress,
+        event_type: "Patient Added",
+        event_details: `Patient ${wallet_address} added by ${adminAddress}`,
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+        },
+      }
+    );
+
     return { success: true, error: null };
   } catch (error) {
     console.error("Error adding patient:", error);

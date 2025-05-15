@@ -69,6 +69,7 @@ export default function Login() {
   
       // 1. Always check blockchain for role
       onChainRole = await getRoleOnChain(userAddress);
+      console.log('On-chain role:', onChainRole);
   
       const { data: nonceData } = await axios.post('http://localhost:8000/api/auth/nonce/', {
         address: userAddress,
@@ -283,6 +284,8 @@ export default function Login() {
       //if patient, create a new record
       if (selectedRole === 'patient') {
         setShowAddPatientModal(true);
+      } else {
+        navigate('/dashboard');
       }
 
 
